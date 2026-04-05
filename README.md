@@ -1,27 +1,42 @@
-# 🌱 EcoSalud Marketplace
+# 🌱 EcoSalud Marketplace - Backend
 
-Plataforma digital enfocada en la conexión de economías hiperlocales, orientada a la comercialización de productos de farmacología vegetal y la gestión de terapias alternativas.
+API REST diseñada para soportar la plataforma EcoSalud, enfocada en la conexión de economías hiperlocales mediante la gestión de productos de farmacología vegetal, servicios terapéuticos y usuarios dentro de una comunidad.
 
-EcoSalud Marketplace permite a productores locales, terapeutas y consumidores interactuar en un entorno digital que promueve el bienestar natural, el comercio justo y la salud sostenible.
+Este backend proporciona la lógica de negocio, seguridad y persistencia de datos necesarios para el funcionamiento del sistema.
+
+---
+
+## 📌 Descripción
+
+EcoSalud Marketplace Backend es un sistema que permite gestionar la información de productores, terapeutas, clínicas y consumidores, facilitando la interacción dentro de un marketplace local.
+
+Además, provee los servicios necesarios para el agendamiento de citas médicas, integrándose con el frontend orientado a la reserva de citas.
 
 ---
 
 ## 🚀 Funcionalidades principales
 
-- 🛒 Marketplace de productos naturales y terapias alternativas  
-- 📅 Agenda de citas para servicios terapéuticos  
-- 👤 Gestión de usuarios (productores, terapeutas, clientes)  
-- 🔎 Búsqueda y filtrado de productos/servicios  
+- 🔐 Autenticación y autorización de usuarios (JWT)  
+- 👤 Gestión de usuarios  
+- 🛒 Gestión de productos del marketplace  
+- 📅 Gestión de citas médicas
+- 🔎 Búsqueda y filtrado de productos y servicios  
+- 🔗 Exposición de API REST para consumo por frontend  
+
+
+---
+## 🧱 Arquitectura
+
+El backend está construido bajo una arquitectura en capas:
+
+- Controladores (Controllers)  
+- Servicios (Services)  
+- Repositorios (Repositories)  
+- Entidades (Entities)
 
 ---
 
 ## 🛠️ Tecnologías utilizadas
-
-### 🔹 Frontend
-- React  
-- TypeScript  
-- HTML5 & CSS3  
-- Material UI  
 
 ### 🔹 Backend
 - Java  
@@ -41,6 +56,17 @@ Fortalecer la economía local mediante una plataforma digital que conecte produc
 Este proyecto se desarrolla bajo la línea:
 
 **Conexión Local — Economías Hiperlocales**
+
+---
+
+## 🔗 Integración con Frontend
+
+Este backend está diseñado para integrarse con el frontend de EcoSalud enfocado en el agendamiento de citas, permitiendo:
+
+- Autenticación de usuarios  
+- Consulta de disponibilidad  
+- Reserva de citas  
+- Gestión de información en tiempo real
 
 ---
 
