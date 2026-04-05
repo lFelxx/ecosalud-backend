@@ -44,6 +44,6 @@ Este proyecto se desarrolla bajo la línea:
 
 ---
 
-## 👨‍💻 Autor
+## 👨‍💻 Autores
 
 Proyecto desarrollado como iniciativa académica y de portafolio profesional.
