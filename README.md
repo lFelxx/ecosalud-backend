@@ -20,8 +20,7 @@ Además, provee los servicios necesarios para el agendamiento de citas médicas,
 - 👤 Gestión de usuarios  
 - 🛒 Gestión de productos del marketplace  
 - 📅 Gestión de citas médicas
-- 🔎 Búsqueda y filtrado de productos y servicios  
-- 🔗 Exposición de API REST para consumo por frontend  
+- 🔎 Búsqueda y filtrado de productos y servicios   
 
 
 ---
