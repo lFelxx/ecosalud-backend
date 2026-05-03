@@ -27,7 +27,7 @@ public class Appointment {
 
     @Column(name = "date", nullable = false)
     private LocalDateTime date;
-    
+
     @Column(name = "status", nullable = false)
     @Enumerated(EnumType.STRING)
     private AppointmentSatus status;

@@ -12,14 +12,14 @@ public class Service {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     private Long id;
-    
+
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
-    private User user;  
+    private User user;
 
     @Column(name = "name", nullable = false)
     private String name;
-    
+
     @Column(name = "description", nullable = false)
     private String description;
 
@@ -31,6 +31,5 @@ public class Service {
 
     @Column(name = "availability", nullable = false)
     private Boolean availability;
-    
-    
+
 }
