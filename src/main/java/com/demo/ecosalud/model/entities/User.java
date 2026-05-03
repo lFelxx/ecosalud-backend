@@ -10,12 +10,11 @@ import lombok.Data;
 @Data
 @Table(name = "users")
 public class User {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     private Long id;
-
 
     @Column(name = "name", nullable = false)
     private String name;
@@ -33,6 +32,5 @@ public class User {
     @Column(name = "role", nullable = false)
     @Enumerated(EnumType.STRING)
     private RolUser role;
-
 
 }

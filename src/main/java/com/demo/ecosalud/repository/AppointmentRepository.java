@@ -9,8 +9,11 @@ import com.demo.ecosalud.model.entities.Appointment;
 
 public interface AppointmentRepository extends JpaRepository<Appointment, Long> {
     Boolean existsByUserId(Long userId);
+
     Boolean existsByServiceId(Long serviceId);
+
     Boolean existsByDate(LocalDateTime date);
+
     Boolean existsByStatus(AppointmentSatus status);
-    
+
 }
