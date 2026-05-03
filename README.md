@@ -16,11 +16,11 @@ Además, provee los servicios necesarios para el agendamiento de citas médicas,
 
 ## 🚀 Funcionalidades principales
 
-- 🔐 Autenticación y autorización de usuarios (JWT)  
-- 👤 Gestión de usuarios  
-- 🛒 Gestión de productos del marketplace  
+- 🔐 Autenticación y autorización de usuarios (JWT)
+- 👤 Gestión de usuarios
+- 🛒 Gestión de productos del marketplace
 - 📅 Gestión de citas médicas
-- 🔎 Búsqueda y filtrado de productos y servicios   
+- 🔎 Búsqueda y filtrado de productos y servicios
 
 
 ---
@@ -28,9 +28,9 @@ Además, provee los servicios necesarios para el agendamiento de citas médicas,
 
 El backend está construido bajo una arquitectura en capas:
 
-- Controladores (Controllers)  
-- Servicios (Services)  
-- Repositorios (Repositories)  
+- Controladores (Controllers)
+- Servicios (Services)
+- Repositorios (Repositories)
 - Entidades (Entities)
 
 ---
@@ -38,13 +38,13 @@ El backend está construido bajo una arquitectura en capas:
 ## 🛠️ Tecnologías utilizadas
 
 ### 🔹 Backend
-- Java  
-- Spring Boot  
-- Spring Security  
-- JPA / Hibernate  
+- Java
+- Spring Boot
+- Spring Security
+- JPA / Hibernate
 
 ### 🔹 Base de Datos
-- PostgreSQL  
+- PostgreSQL
 
 ---
 
@@ -62,9 +62,9 @@ Este proyecto se desarrolla bajo la línea:
 
 Este backend está diseñado para integrarse con el frontend de EcoSalud enfocado en el agendamiento de citas, permitiendo:
 
-- Autenticación de usuarios  
-- Consulta de disponibilidad  
-- Reserva de citas  
+- Autenticación de usuarios
+- Consulta de disponibilidad
+- Reserva de citas
 - Gestión de información en tiempo real
 
 ---

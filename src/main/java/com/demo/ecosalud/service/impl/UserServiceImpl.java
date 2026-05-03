@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 
 import jakarta.transaction.Transactional;
 
+import com.demo.ecosalud.exception.ResourceNotFoundException;
 import com.demo.ecosalud.mapper.UserMapper;
 import com.demo.ecosalud.model.dto.UserDTO;
 import com.demo.ecosalud.model.entities.User;
@@ -21,8 +22,6 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-
-
     @Override
     public UserDTO register(UserDTO userDTO) {
         if (userRepository.existsByEmail(userDTO.getEmail())) {
@@ -31,20 +30,21 @@ public class UserServiceImpl implements UserService {
         if (userRepository.existsByName(userDTO.getName())) {
             throw new RuntimeException("El nombre ya está registrado");
         }
-        
-       User user = UserMapper.toEntity(userDTO);
-       user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
 
-       User save = userRepository.save(user);
+        User user = UserMapper.toEntity(userDTO);
+        user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
 
-       return UserMapper.toDTO(save);
-    
+        User save = userRepository.save(user);
+
+        return UserMapper.toDTO(save);
+
     }
 
     @Override
     public UserDTO getUserById(Long id) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getUserById'");
+        return userRepository.findById(id)
+            .map(UserMapper::toDTO)
+            .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con id: " + id));
     }
 
     @Override
@@ -58,5 +58,5 @@ public class UserServiceImpl implements UserService {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'deleteUser'");
     }
-    
+
 }

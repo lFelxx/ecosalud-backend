@@ -9,8 +9,10 @@ import com.demo.ecosalud.model.entities.User;
 
 public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);
+
     Boolean existsByEmail(String email);
+
     Boolean existsByName(String name);
+
     Boolean existsByStatus(UserStatus status);
-    Boolean findById(UserStatus status);
 }

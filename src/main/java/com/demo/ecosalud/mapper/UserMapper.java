@@ -4,8 +4,8 @@ import com.demo.ecosalud.model.dto.UserDTO;
 import com.demo.ecosalud.model.entities.User;
 
 public class UserMapper {
-    
-    public static User toEntity(UserDTO dto){
+
+    public static User toEntity(UserDTO dto) {
 
         User user = new User();
         user.setName(dto.getName());
@@ -15,9 +15,10 @@ public class UserMapper {
         return user;
     }
 
-    public static UserDTO toDTO(User user){
+    public static UserDTO toDTO(User user) {
 
         UserDTO dto = new UserDTO();
+        dto.setId(user.getId());
         dto.setName(user.getName());
         dto.setEmail(user.getEmail());
         dto.setRole(user.getRole());
