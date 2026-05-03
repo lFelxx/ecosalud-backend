@@ -1,4 +1,4 @@
-package com.ecosalud.demo;
+package com.demo.ecosalud;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
