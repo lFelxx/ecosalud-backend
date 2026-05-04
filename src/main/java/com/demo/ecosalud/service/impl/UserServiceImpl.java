@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 
 import jakarta.transaction.Transactional;
 
+import com.demo.ecosalud.enums.RolUser;
+import com.demo.ecosalud.enums.UserStatus;
 import com.demo.ecosalud.exception.ResourceNotFoundException;
 import com.demo.ecosalud.mapper.UserMapper;
 import com.demo.ecosalud.model.dto.UserDTO;
@@ -33,6 +35,13 @@ public class UserServiceImpl implements UserService {
 
         User user = UserMapper.toEntity(userDTO);
         user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
+
+        if (user.getRole() == null) {
+            user.setRole(RolUser.USER);
+        }
+        if (user.getStatus() == null) {
+            user.setStatus(UserStatus.ACTIVO);
+        }
 
         User save = userRepository.save(user);
 
