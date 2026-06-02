@@ -71,4 +71,4 @@ Este backend está diseñado para integrarse con el frontend de EcoSalud enfocad
 
 ## 👨‍💻 Autores
 
-Proyecto desarrollado como iniciativa académica y de portafolio profesional.
+Proyecto desarrollado como iniciativa académica y de portafolio profesional
