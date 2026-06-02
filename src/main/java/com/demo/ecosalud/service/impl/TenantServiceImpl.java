@@ -19,6 +19,8 @@ import com.demo.ecosalud.service.TenantService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.beans.factory.annotation.Value;
+
 /**
  * Implementación del servicio de tenants.
  *
@@ -31,8 +33,12 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional
 public class TenantServiceImpl implements TenantService {
 
-    private final TenantRepository    tenantRepository;
+    private final TenantRepository            tenantRepository;
     private final SchemaInitializationService schemaService;
+
+    /** Dominio base para subdominios de tenants — configurable en application.properties */
+    @Value("${platform.domain:ecosalud.com}")
+    private String platformDomain;
 
     @Override
     public TenantDTO createTenant(CreateTenantRequest req) {
@@ -51,9 +57,13 @@ public class TenantServiceImpl implements TenantService {
                 ? BillingStatus.EXEMPT
                 : BillingStatus.ACTIVE;
 
-        // Generar nombre de schema (snake_case, prefijo tenant_)
+        // Generar nombre de schema PostgreSQL — snake_case con prefijo "tenant_"
+        // Ejemplo: slug "dra-angelica-camacho" → schema "tenant_dra_angelica_camacho"
         String schemaName = "tenant_" + req.getSlug().replace("-", "_");
-        String subdomain  = req.getSlug() + ".ecosaludmarket.com";
+
+        // Subdominio automático — usa el dominio de plataforma configurado
+        // Ejemplo: "dra-angelica-camacho.ecosalud.com"
+        String subdomain  = req.getSlug() + "." + platformDomain;
 
         Tenant tenant = Tenant.builder()
                 .name(req.getName())

@@ -20,27 +20,37 @@ import lombok.extern.slf4j.Slf4j;
  * <p>Solo se ejecuta si los tenants no existen aún en la base de datos.
  * Es idempotente — se puede reiniciar la app sin duplicar tenants.</p>
  *
- * <p><strong>Tenants fundadores:</strong></p>
+ * <p><strong>Tenants fundadores (Plan CLINIC ilimitado — EXENTO de pago):</strong></p>
  * <ul>
- *   <li>ecosalud-camacho — Dra. Angélica Camacho (Medicina Integrativa)</li>
- *   <li>fisiosalud       — Fisiosalud SAS (IPS multidisciplinaria)</li>
+ *   <li>dra-angelica-camacho — Dra. Angélica Camacho (Terapias alternativas y farmacología vegetal)</li>
+ *   <li>fisiosalud           — Fisiosalud SAS (IPS habilitada, 10+ especialistas)</li>
  * </ul>
  *
- * <p><strong>Credenciales de acceso a la plataforma:</strong></p>
+ * <p><strong>NOTA DE DOMINIO:</strong> Los slugs usan guiones (no puntos) para
+ * cumplir con el estándar DNS de subdominios. El punto en "Dra." es solo display.</p>
+ *
+ * <p><strong>Credenciales iniciales — CAMBIAR EN PRODUCCIÓN:</strong></p>
  * <pre>
- *   SUPER ADMIN
- *     Email:    superadmin@ecosaludmarket.com
- *     Password: EcoSaaS#2024  (cambiar en producción)
+ *   ── SUPER ADMIN (Plataforma) ──────────────────────────────────────────
+ *     Propietarios : Ing. Félix Castro · Ing. Elkin Chaparro
+ *     Email        : superadmin@ecosaludmarket.com
+ *     Password     : EcoSaaS#2024
+ *     URL          : admin.ecosaludmarket.com
  *
- *   Dra. Angélica Camacho (Tenant Admin)
- *     Email:    admin@ecosalud-camacho.ecosaludmarket.com
- *     Password: Angelica#Clinic2024  (cambiar al primer login)
- *     URL:      ecosalud-camacho.ecosaludmarket.com
+ *   ── TENANT 1: Dra. Angélica Camacho ──────────────────────────────────
+ *     Email        : admin@dra-angelica-camacho.ecosalud.com
+ *     Password     : Angelica#Clinic2024
+ *     URL inicial  : dra-angelica-camacho.ecosalud.com
+ *     URL futura   : www.dra-angelica-camacho.com.co
+ *     Especialidad : Terapias alternativas y farmacología vegetal
  *
- *   Fisiosalud SAS (Tenant Admin)
- *     Email:    admin@fisiosalud.ecosaludmarket.com
- *     Password: Fisio#Clinic2024  (cambiar al primer login)
- *     URL:      fisiosalud.ecosaludmarket.com
+ *   ── TENANT 2: Fisiosalud SAS ──────────────────────────────────────────
+ *     Email        : admin@fisiosalud.ecosalud.com
+ *     Password     : Fisio#Clinic2024
+ *     URL inicial  : fisiosalud.ecosalud.com
+ *     URL futura   : www.fisiosalud.com.co
+ *     Especialidades: Fisioterapia · Fonoaudiología · Psicología
+ *                     Terapia Ocupacional · Rehabilitación
  * </pre>
  */
 @Slf4j
@@ -60,21 +70,24 @@ public class FounderTenantsSeeder implements ApplicationRunner {
     // ── Tenant 1: Dra. Angélica Camacho ─────────────────────────────────────
 
     private void seedFounderAngelicaCamacho() {
-        final String slug = "ecosalud-camacho";
+        // Slug DNS-seguro: sin puntos (DNS no admite puntos en labels de subdominio)
+        // Display: "Dra. Angélica Camacho" — URL: dra-angelica-camacho.ecosalud.com
+        final String slug = "dra-angelica-camacho";
         if (tenantRepository.existsBySlug(slug)) {
             log.info("[Seeder] Tenant '{}' ya existe — omitiendo.", slug);
             return;
         }
 
         CreateTenantRequest req = new CreateTenantRequest();
-        req.setName("Ecosalud Camacho — Medicina Integrativa");
+        req.setName("Dra. Angélica Camacho");
         req.setSlug(slug);
         req.setOwnerName("Dra. Angélica Camacho");
-        req.setOwnerEmail("admin@ecosalud-camacho.ecosaludmarket.com");
+        req.setOwnerEmail("admin@dra-angelica-camacho.ecosalud.com");
         req.setPhone("+57 300 000 0001");
         req.setCity("Bogotá");
         req.setCountry("CO");
-        req.setSpecialty("Medicina Alternativa e Integrativa");
+        // Especialidad oficial del tenant fundador #1
+        req.setSpecialty("Terapias alternativas y farmacología vegetal");
         req.setPrimaryColor("#3DAA96");
         req.setPlan(SubscriptionPlan.FOUNDER);
         req.setAccountType(AccountType.FOUNDER);
@@ -99,12 +112,15 @@ public class FounderTenantsSeeder implements ApplicationRunner {
         CreateTenantRequest req = new CreateTenantRequest();
         req.setName("Fisiosalud SAS");
         req.setSlug(slug);
-        req.setOwnerName("Administrador Fisiosalud");
-        req.setOwnerEmail("admin@fisiosalud.ecosaludmarket.com");
+        req.setOwnerName("Administrador Fisiosalud SAS");
+        // Email admin del tenant fundador #2 — actualizar con email real en producción
+        req.setOwnerEmail("admin@fisiosalud.ecosalud.com");
         req.setPhone("+57 300 000 0002");
         req.setCity("Colombia");
         req.setCountry("CO");
-        req.setSpecialty("Fisioterapia · Fonoaudiología · Psicología · Terapia Ocupacional");
+        // IPS con 20+ años de trayectoria — múltiples especialidades
+        req.setSpecialty("Fisioterapia · Fonoaudiología · Psicología · Terapia Ocupacional · Rehabilitación");
+        // Color corporativo de Fisiosalud — azul IPS (diferenciado del verde de Ecosalud)
         req.setPrimaryColor("#1A5F8A");
         req.setPlan(SubscriptionPlan.FOUNDER);
         req.setAccountType(AccountType.FOUNDER);
