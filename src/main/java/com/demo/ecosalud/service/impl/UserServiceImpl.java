@@ -58,31 +58,14 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserDTO updateUser(Long id, UserDTO userDTO) {
-        // Busca el usuario o lanza excepción si no existe
-        User usuario = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con id: " + id));
-
-        // Actualiza los campos editables
-        usuario.setName(userDTO.getName());
-        usuario.setEmail(userDTO.getEmail());
-        usuario.setRole(userDTO.getRole());
-        usuario.setStatus(userDTO.getStatus());
-
-        // Solo re-hashea la contraseña si se envía una nueva
-        if (userDTO.getPassword() != null && !userDTO.getPassword().isBlank()) {
-            usuario.setPassword(passwordEncoder.encode(userDTO.getPassword()));
-        }
-
-        return UserMapper.toDTO(userRepository.save(usuario));
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'updateUser'");
     }
 
     @Override
     public void deleteUser(Long id) {
-        // Verifica existencia antes de eliminar para retornar un error claro
-        if (!userRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Usuario no encontrado con id: " + id);
-        }
-        userRepository.deleteById(id);
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'deleteUser'");
     }
 
 }
