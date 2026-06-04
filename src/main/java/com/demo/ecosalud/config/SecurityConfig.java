@@ -41,7 +41,7 @@ public class SecurityConfig {
 				// Configurar rutas protegidas y públicas
 				.authorizeHttpRequests(auth -> auth
 						// Rutas públicas (login, registro, swagger si lo usas)
-						.requestMatchers("/auth/**", "/api/auth/**", "/api/user/register").permitAll()
+						.requestMatchers("/auth/**", "/api/auth/**", "/api/user/register", "/api/therapists/register").permitAll()
 						// Todas las demás rutas requieren estar autenticado
 						.anyRequest().authenticated())
 				// Configurar el manejo de sesión para que sea sin estado (Stateless)
