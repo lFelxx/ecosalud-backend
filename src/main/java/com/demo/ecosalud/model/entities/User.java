@@ -6,6 +6,10 @@ import com.demo.ecosalud.enums.UserStatus;
 import jakarta.persistence.*;
 import lombok.Data;
 
+/**
+ * Representa la cuenta de un usuario en el sistema.
+ * Puede tener los roles: USER (paciente), THERAPIST o ADMIN.
+ */
 @Entity
 @Data
 @Table(name = "users")

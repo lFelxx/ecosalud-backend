@@ -89,6 +89,12 @@
 			<artifactId>spring-boot-starter-webmvc-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<!-- Swagger / OpenAPI -->
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+			<version>2.8.0</version>
+		</dependency>
 		<!-- H2 para pruebas de integración y E2E -->
 		<dependency>
 			<groupId>com.h2database</groupId>
@@ -127,6 +133,17 @@
 							<artifactId>lombok</artifactId>
 						</exclude>
 					</excludes>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-checkstyle-plugin</artifactId>
+				<version>3.3.1</version>
+				<configuration>
+					<configLocation>checkstyle.xml</configLocation>
+					<failsOnError>true</failsOnError>
+					<consoleOutput>true</consoleOutput>
+					<includeTestSourceDirectory>false</includeTestSourceDirectory>
 				</configuration>
 			</plugin>
 			<plugin>

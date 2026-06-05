@@ -5,6 +5,9 @@ import com.demo.ecosalud.enums.UserStatus;
 
 import lombok.Data;
 
+/**
+ * DTO para crear y retornar datos de un usuario paciente.
+ */
 @Data
 public class UserDTO {
 

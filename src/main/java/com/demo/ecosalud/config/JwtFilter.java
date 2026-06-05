@@ -18,6 +18,10 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Filtro HTTP que intercepta cada petición, extrae el token JWT del header
+ * {@code Authorization: Bearer <token>} y establece la autenticación en el contexto de Spring Security.
+ */
 @Component
 @Slf4j
 @RequiredArgsConstructor

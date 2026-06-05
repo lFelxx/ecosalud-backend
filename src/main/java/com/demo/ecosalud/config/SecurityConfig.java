@@ -42,7 +42,8 @@ public class SecurityConfig {
 				// Configurar rutas protegidas y públicas
 				.authorizeHttpRequests(auth -> auth
 						// Rutas públicas (login, registro, swagger si lo usas)
-						.requestMatchers("/auth/**", "/api/auth/**", "/api/user/register", "/api/therapists/register").permitAll()
+						.requestMatchers("/auth/**", "/api/auth/**", "/api/user/register", "/api/therapists/register",
+								"/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
 						// Todas las demás rutas requieren estar autenticado
 						.anyRequest().authenticated())
 				.exceptionHandling(ex -> ex

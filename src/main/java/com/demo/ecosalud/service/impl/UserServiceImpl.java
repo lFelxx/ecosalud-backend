@@ -17,6 +17,9 @@ import com.demo.ecosalud.model.entities.User;
 import com.demo.ecosalud.repository.UserRepository;
 import com.demo.ecosalud.service.UserService;
 
+/**
+ * Implementación del servicio de gestión de usuarios pacientes.
+ */
 @RequiredArgsConstructor
 @Service
 @Transactional
