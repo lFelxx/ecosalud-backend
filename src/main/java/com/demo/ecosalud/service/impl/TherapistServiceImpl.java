@@ -12,6 +12,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.demo.ecosalud.enums.RolUser;
 import com.demo.ecosalud.enums.UserStatus;
+import com.demo.ecosalud.exception.DuplicateResourceException;
 import com.demo.ecosalud.exception.ResourceNotFoundException;
 import com.demo.ecosalud.mapper.TherapistMapper;
 import com.demo.ecosalud.model.dto.TherapistDTO;
@@ -41,10 +42,10 @@ public class TherapistServiceImpl implements TherapistService {
     @Override
     public TherapistDTO registerTherapist(TherapistRegisterDTO dto) {
         if (userRepository.existsByEmail(dto.getEmail())) {
-            throw new RuntimeException("El email ya está registrado");
+            throw new DuplicateResourceException("El email ya está registrado");
         }
         if (userRepository.existsByName(dto.getName())) {
-            throw new RuntimeException("El nombre ya está registrado");
+            throw new DuplicateResourceException("El nombre ya está registrado");
         }
 
         User user = new User();
