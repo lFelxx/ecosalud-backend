@@ -3,6 +3,9 @@ package com.demo.ecosalud.mapper;
 import com.demo.ecosalud.model.dto.UserDTO;
 import com.demo.ecosalud.model.entities.User;
 
+/**
+ * Convierte entre la entidad {@link com.demo.ecosalud.model.entities.User} y su {@link UserDTO}.
+ */
 public class UserMapper {
 
     public static User toEntity(UserDTO dto) {

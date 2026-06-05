@@ -10,6 +10,10 @@ import com.demo.ecosalud.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Implementación de {@link UserDetailsService} que carga el usuario por email
+ * desde la base de datos para ser usado por Spring Security en la autenticación.
+ */
 @Service
 @RequiredArgsConstructor
 public class UserDetailsServiceImpl implements UserDetailsService {

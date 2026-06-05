@@ -17,6 +17,10 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 
+/**
+ * Utilidades para la generación y validación de tokens JWT.
+ * Usa HMAC-SHA256 con la clave configurada en {@code jwt.secret}.
+ */
 @Service
 public class JwtUtils {
 

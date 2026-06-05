@@ -12,6 +12,10 @@ import com.demo.ecosalud.model.entities.User;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+/**
+ * Adaptador entre la entidad {@link com.demo.ecosalud.model.entities.User} y
+ * la interfaz {@link UserDetails} requerida por Spring Security.
+ */
 @AllArgsConstructor
 @Getter
 public class UserDetailsImpl implements UserDetails {

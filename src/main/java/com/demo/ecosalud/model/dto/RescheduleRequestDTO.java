@@ -6,6 +6,9 @@ import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
+/**
+ * DTO con la nueva fecha para reprogramar una cita existente.
+ */
 @Data
 public class RescheduleRequestDTO {
 

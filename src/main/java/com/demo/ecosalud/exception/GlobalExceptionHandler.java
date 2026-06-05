@@ -12,6 +12,10 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 
+/**
+ * Manejador global de excepciones. Intercepta todas las excepciones del proyecto
+ * y retorna respuestas HTTP con estructura uniforme ({@link com.demo.ecosalud.model.dto.ErrorResponseDTO}).
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 

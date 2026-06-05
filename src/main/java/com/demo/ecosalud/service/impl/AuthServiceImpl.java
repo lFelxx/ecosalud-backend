@@ -12,6 +12,9 @@ import com.demo.ecosalud.util.JwtUtils;
 
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Implementación del servicio de autenticación usando Spring Security y JWT.
+ */
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {

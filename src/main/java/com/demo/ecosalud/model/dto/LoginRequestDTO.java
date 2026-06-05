@@ -4,6 +4,9 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
+/**
+ * DTO con las credenciales de acceso enviadas en el request de login.
+ */
 @Data
 public class LoginRequestDTO {
     @Email(message = "El email debe ser válido")
