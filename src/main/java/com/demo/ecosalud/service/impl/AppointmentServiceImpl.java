@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.demo.ecosalud.enums.AppointmentSatus;
+import com.demo.ecosalud.exception.BusinessRuleException;
 import com.demo.ecosalud.exception.ResourceNotFoundException;
 import com.demo.ecosalud.mapper.AppointmentMapper;
 import com.demo.ecosalud.model.dto.AppointmentDTO;
@@ -60,7 +61,7 @@ public class AppointmentServiceImpl implements AppointmentService {
                         "Terapeuta no encontrado con id: " + appointmentDTO.getTherapistId()));
 
         if (!therapist.getAvailable()) {
-            throw new RuntimeException("El terapeuta seleccionado no está disponible actualmente");
+            throw new BusinessRuleException("El terapeuta seleccionado no está disponible actualmente");
         }
 
         Catalog catalog = catalogRepository.findById(appointmentDTO.getCatalogId())
@@ -68,21 +69,21 @@ public class AppointmentServiceImpl implements AppointmentService {
                         "Servicio no encontrado con id: " + appointmentDTO.getCatalogId()));
 
         if (!catalog.getAvailability()) {
-            throw new RuntimeException("El servicio seleccionado no está disponible actualmente");
+            throw new BusinessRuleException("El servicio seleccionado no está disponible actualmente");
         }
 
         // Verificar que el paciente no tenga ya una cita activa en esa fecha y hora
         boolean userHasConflict = appointmentRepository.existsByUserIdAndDateAndStatusNot(
                 user.getId(), appointmentDTO.getDate(), AppointmentSatus.CANCELADA);
         if (userHasConflict) {
-            throw new RuntimeException("El paciente ya tiene una cita agendada en esa fecha y hora");
+            throw new BusinessRuleException("El paciente ya tiene una cita agendada en esa fecha y hora");
         }
 
         // Verificar que el terapeuta no tenga ya una cita activa en esa fecha y hora
         boolean therapistHasConflict = appointmentRepository.existsByTherapistIdAndDateAndStatusNot(
                 therapist.getId(), appointmentDTO.getDate(), AppointmentSatus.CANCELADA);
         if (therapistHasConflict) {
-            throw new RuntimeException("El terapeuta no tiene disponibilidad en la fecha y hora seleccionada");
+            throw new BusinessRuleException("El terapeuta no tiene disponibilidad en la fecha y hora seleccionada");
         }
 
         Appointment appointment = AppointmentMapper.toEntity(appointmentDTO, user, therapist, catalog);
@@ -166,25 +167,25 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Cita no encontrada con id: " + id));
 
         if (appointment.getStatus() == AppointmentSatus.CANCELADA) {
-            throw new RuntimeException("No se puede reprogramar una cita cancelada");
+            throw new BusinessRuleException("No se puede reprogramar una cita cancelada");
         }
 
         if (newDate.isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("La nueva fecha debe ser en el futuro");
+            throw new BusinessRuleException("La nueva fecha debe ser en el futuro");
         }
 
         // Verificar que el paciente esté libre en la nueva fecha
         boolean userHasConflict = appointmentRepository.existsByUserIdAndDateAndStatusNot(
                 appointment.getUser().getId(), newDate, AppointmentSatus.CANCELADA);
         if (userHasConflict) {
-            throw new RuntimeException("El paciente ya tiene una cita agendada en esa fecha y hora");
+            throw new BusinessRuleException("El paciente ya tiene una cita agendada en esa fecha y hora");
         }
 
         // Verificar que el terapeuta esté libre en la nueva fecha
         boolean therapistHasConflict = appointmentRepository.existsByTherapistIdAndDateAndStatusNot(
                 appointment.getTherapist().getId(), newDate, AppointmentSatus.CANCELADA);
         if (therapistHasConflict) {
-            throw new RuntimeException("El terapeuta no tiene disponibilidad en la nueva fecha y hora");
+            throw new BusinessRuleException("El terapeuta no tiene disponibilidad en la nueva fecha y hora");
         }
 
         appointment.setDate(newDate);
@@ -203,7 +204,7 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Cita no encontrada con id: " + id));
 
         if (appointment.getStatus() == AppointmentSatus.CANCELADA) {
-            throw new RuntimeException("La cita ya se encuentra cancelada");
+            throw new BusinessRuleException("La cita ya se encuentra cancelada");
         }
 
         appointment.setStatus(AppointmentSatus.CANCELADA);
@@ -221,7 +222,7 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Cita no encontrada con id: " + id));
 
         if (appointment.getStatus() == AppointmentSatus.CANCELADA) {
-            throw new RuntimeException("No se puede confirmar una cita cancelada");
+            throw new BusinessRuleException("No se puede confirmar una cita cancelada");
         }
 
         appointment.setStatus(AppointmentSatus.CONFIRMADA);

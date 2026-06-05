@@ -9,6 +9,7 @@ import jakarta.transaction.Transactional;
 
 import com.demo.ecosalud.enums.RolUser;
 import com.demo.ecosalud.enums.UserStatus;
+import com.demo.ecosalud.exception.DuplicateResourceException;
 import com.demo.ecosalud.exception.ResourceNotFoundException;
 import com.demo.ecosalud.mapper.UserMapper;
 import com.demo.ecosalud.model.dto.UserDTO;
@@ -27,10 +28,10 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserDTO register(UserDTO userDTO) {
         if (userRepository.existsByEmail(userDTO.getEmail())) {
-            throw new RuntimeException("El email ya está registrado");
+            throw new DuplicateResourceException("El email ya está registrado");
         }
         if (userRepository.existsByName(userDTO.getName())) {
-            throw new RuntimeException("El nombre ya está registrado");
+            throw new DuplicateResourceException("El nombre ya está registrado");
         }
 
         User user = UserMapper.toEntity(userDTO);

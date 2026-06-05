@@ -10,6 +10,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -44,6 +45,8 @@ public class SecurityConfig {
 						.requestMatchers("/auth/**", "/api/auth/**", "/api/user/register", "/api/therapists/register").permitAll()
 						// Todas las demás rutas requieren estar autenticado
 						.anyRequest().authenticated())
+				.exceptionHandling(ex -> ex
+						.authenticationEntryPoint(unauthorizedEntryPoint()))
 				// Configurar el manejo de sesión para que sea sin estado (Stateless)
 				.sessionManagement(session -> session
 						.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -70,6 +73,15 @@ public class SecurityConfig {
 	@Bean
 	public PasswordEncoder passwordEncoder() {
 		return new BCryptPasswordEncoder();
+	}
+
+	@Bean
+	public AuthenticationEntryPoint unauthorizedEntryPoint() {
+		return (request, response, ex) -> {
+			response.setStatus(401);
+			response.setContentType("application/json");
+			response.getWriter().write("{\"status\":401,\"error\":\"Unauthorized\",\"message\":\"No autenticado\"}");
+		};
 	}
 
 	// Configuración básica de CORS para permitir peticiones desde cualquier origen

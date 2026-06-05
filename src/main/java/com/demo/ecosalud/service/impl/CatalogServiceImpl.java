@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.stereotype.Service;
 
+import com.demo.ecosalud.exception.DuplicateResourceException;
 import com.demo.ecosalud.exception.ResourceNotFoundException;
 import com.demo.ecosalud.mapper.CatalogMapper;
 import com.demo.ecosalud.model.dto.CatalogDTO;
@@ -35,7 +36,7 @@ public class CatalogServiceImpl implements CatalogService {
     @Override
     public CatalogDTO createCatalog(CatalogDTO catalogDTO) {
         if (catalogRepository.existsByName(catalogDTO.getName())) {
-            throw new RuntimeException("Ya existe un servicio con el nombre: " + catalogDTO.getName());
+            throw new DuplicateResourceException("Ya existe un servicio con el nombre: " + catalogDTO.getName());
         }
 
         Catalog catalog = CatalogMapper.toEntity(catalogDTO);
@@ -90,7 +91,7 @@ public class CatalogServiceImpl implements CatalogService {
 
         boolean nameChanged = !catalog.getName().equalsIgnoreCase(catalogDTO.getName());
         if (nameChanged && catalogRepository.existsByName(catalogDTO.getName())) {
-            throw new RuntimeException("Ya existe un servicio con el nombre: " + catalogDTO.getName());
+            throw new DuplicateResourceException("Ya existe un servicio con el nombre: " + catalogDTO.getName());
         }
 
         catalog.setName(catalogDTO.getName());
