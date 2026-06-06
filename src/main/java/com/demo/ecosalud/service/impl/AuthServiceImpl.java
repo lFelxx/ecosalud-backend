@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import com.demo.ecosalud.model.dto.LoginRequestDTO;
 import com.demo.ecosalud.model.dto.LoginResponseDTO;
+import com.demo.ecosalud.model.entities.User;
 import com.demo.ecosalud.service.AuthService;
 import com.demo.ecosalud.util.JwtUtils;
 
@@ -33,7 +34,14 @@ public class AuthServiceImpl implements AuthService {
 
         String token = jwtUtils.generateToken(userDetails);
 
-        return new LoginResponseDTO(token, userDetails.getUsername(), userDetails.getUser().getRole().name());
+        User user = userDetails.getUser();
+        return new LoginResponseDTO(
+                token,
+                user.getId(),
+                user.getName(),
+                user.getEmail(),
+                user.getRole().name(),
+                user.getStatus().name());
     }
 
 }
