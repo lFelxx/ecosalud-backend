@@ -1,14 +1,14 @@
 package com.demo.ecosalud.repository;
 
+import com.demo.ecosalud.model.entities.Service;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.demo.ecosalud.model.entities.Service;
+import java.util.List;
 
 public interface ServiceRepository extends JpaRepository<Service, Long> {
-    Boolean existsByName(String name);
 
-    Boolean existsByUserId(Long userId);
+    /** Lista solo los servicios activos, ordenados por nombre. */
+    List<Service> findByActiveTrueOrderByNameAsc();
 
-    Boolean existsByAvailability(Boolean availability);
-
+    boolean existsByName(String name);
 }

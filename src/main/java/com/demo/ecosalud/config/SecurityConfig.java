@@ -55,10 +55,28 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
-                        // Autenticación pública
+                        // Autenticación y registro público
                         .requestMatchers("/auth/**", "/api/auth/**", "/api/user/register").permitAll()
+                        // Onboarding público — registro de nuevas clínicas sin JWT
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/onboarding").permitAll()
                         // Landing pública de cada tenant (sin JWT)
                         .requestMatchers("/api/tenant/**").permitAll()
+                        // Endpoints públicos del sitio de la clínica (sin JWT)
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/services").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/services/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/posts/published").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/posts/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/specialist").permitAll()
+                        // Imágenes públicas — servidas sin JWT para embeberse en landing pages
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/media/files/**").permitAll()
+                        // Info pública de la clínica (para JSON-LD / SEO)
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/public/**").permitAll()
+                        // Health check — usado por Railway/Render para saber que el backend arrancó
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/health").permitAll()
+                        // FHIR CapabilityStatement — público por especificación FHIR R4
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/fhir/metadata").permitAll()
+                        // Webhook de PayU — debe ser público (PayU llama sin JWT)
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/billing/payu/confirmation").permitAll()
                         // Todo lo demás requiere autenticación
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session
@@ -72,8 +90,8 @@ public class SecurityConfig {
 
     @Bean
     public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
-        provider.setPasswordEncoder(passwordEncoder());
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(passwordEncoder());
+        provider.setUserDetailsService(userDetailsService);
         return provider;
     }
 

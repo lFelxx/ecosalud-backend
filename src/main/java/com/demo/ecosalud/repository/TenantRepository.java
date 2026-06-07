@@ -1,10 +1,13 @@
 package com.demo.ecosalud.repository;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import com.demo.ecosalud.enums.BillingStatus;
 import com.demo.ecosalud.model.entities.Tenant;
 
 /**
@@ -16,6 +19,8 @@ import com.demo.ecosalud.model.entities.Tenant;
 public interface TenantRepository extends JpaRepository<Tenant, Long> {
 
     Optional<Tenant> findBySlug(String slug);
+
+    Optional<Tenant> findBySchemaName(String schemaName);
 
     Optional<Tenant> findBySubdomain(String subdomain);
 
@@ -39,4 +44,28 @@ public interface TenantRepository extends JpaRepository<Tenant, Long> {
            OR (t.customDomain = :domain AND t.domainVerified = true)
         """)
     Optional<Tenant> findByAnyDomain(String domain);
+
+    // ── Queries para el scheduler de trials ──────────────────────────────────
+
+    /**
+     * Tenants en período de prueba cuyo trial ya expiró.
+     * Usado por {@link com.demo.ecosalud.scheduler.TrialExpirationJob} para cambiar
+     * el estado a {@code OVERDUE}.
+     *
+     * @param status  debe ser {@code BillingStatus.TRIAL}
+     * @param cutoff  fecha/hora límite ({@code now() - trialDurationDays})
+     */
+    List<Tenant> findByBillingStatusAndCreatedAtBeforeAndActiveTrue(
+            BillingStatus status, LocalDateTime cutoff);
+
+    /**
+     * Tenants en período de prueba que expirarán pronto.
+     * Usado para enviar el email de aviso 3 días antes del vencimiento.
+     *
+     * @param status debe ser {@code BillingStatus.TRIAL}
+     * @param from   inicio del rango ({@code cutoff - 3 días})
+     * @param to     fin del rango   ({@code cutoff})
+     */
+    List<Tenant> findByBillingStatusAndCreatedAtBetweenAndActiveTrue(
+            BillingStatus status, LocalDateTime from, LocalDateTime to);
 }

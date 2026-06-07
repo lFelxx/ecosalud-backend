@@ -83,4 +83,37 @@ public interface EmailService {
             String dateTime,
             String cancellationNote
     );
+
+    /**
+     * Avisa al propietario de la clínica que su trial vence en {@code daysLeft} días.
+     *
+     * @param toEmail    correo del propietario
+     * @param ownerName  nombre del propietario
+     * @param clinicName nombre de la clínica
+     * @param daysLeft   días restantes del período de prueba
+     * @param billingUrl URL directa a la página de suscripción de la clínica
+     */
+    void sendTrialExpiring(
+            String toEmail,
+            String ownerName,
+            String clinicName,
+            int    daysLeft,
+            String billingUrl
+    );
+
+    /**
+     * Notifica al propietario que el período de prueba ha vencido y su cuenta
+     * está en estado {@code OVERDUE} — la creación de nuevos recursos está bloqueada.
+     *
+     * @param toEmail    correo del propietario
+     * @param ownerName  nombre del propietario
+     * @param clinicName nombre de la clínica
+     * @param billingUrl URL directa a la página de suscripción de la clínica
+     */
+    void sendTrialExpired(
+            String toEmail,
+            String ownerName,
+            String clinicName,
+            String billingUrl
+    );
 }

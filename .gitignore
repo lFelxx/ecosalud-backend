@@ -40,3 +40,6 @@ build/
 .env
 .env.local
 .env.*.local
+
+### Media / Uploads locales (en producción se usa Cloudinary) ###
+uploads/

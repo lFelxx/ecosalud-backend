@@ -3,6 +3,13 @@ package com.demo.ecosalud.model.entities;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+/**
+ * Entidad JPA para los servicios / terapias ofrecidos por la clínica.
+ * Mapea a la tabla {@code services} en el schema del tenant activo.
+ */
 @Entity
 @Data
 @Table(name = "services")
@@ -13,23 +20,31 @@ public class Service {
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
-
     @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "description", nullable = false)
+    @Column(name = "category", length = 100)
+    private String category;
+
+    @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "price", nullable = false)
-    private Double price;
+    /** Beneficios del servicio (líneas separadas por '\n'). */
+    @Column(name = "benefits", columnDefinition = "TEXT")
+    private String benefits;
 
-    @Column(name = "duration", nullable = false)
-    private Integer duration;
+    @Column(name = "duration_minutes")
+    private Integer durationMinutes;
 
-    @Column(name = "availability", nullable = false)
-    private Boolean availability;
+    @Column(name = "price_cop", precision = 12, scale = 2)
+    private BigDecimal priceCop;
 
+    @Column(name = "image_url", columnDefinition = "TEXT")
+    private String imageUrl;
+
+    @Column(name = "active", nullable = false)
+    private boolean active = true;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 }

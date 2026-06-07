@@ -73,6 +73,37 @@
             <optional>true</optional>
         </dependency>
 
+        <!-- JWT: generación y validación de tokens (JJWT 0.11.x) -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+            <version>0.11.5</version>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <version>0.11.5</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <version>0.11.5</version>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!--
+            Cloudinary — almacenamiento persistente de archivos de media en nube.
+            Reemplaza el almacenamiento en disco local (que se pierde en cada
+            redeploy en Railway/Render). Requiere env var CLOUDINARY_URL.
+            Si CLOUDINARY_URL no está configurado el sistema cae en modo disco local.
+        -->
+        <dependency>
+            <groupId>com.cloudinary</groupId>
+            <artifactId>cloudinary-http45</artifactId>
+            <version>1.38.0</version>
+        </dependency>
+
         <!-- Suite de pruebas: JUnit 5, Mockito, MockMvc -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

@@ -91,6 +91,25 @@ public class ResendEmailServiceImpl implements EmailService {
         enviar(toEmail, asunto, html);
     }
 
+    @Override
+    public void sendTrialExpiring(String toEmail, String ownerName,
+            String clinicName, int daysLeft, String billingUrl) {
+
+        String asunto = "⏳ Tu período de prueba vence en " + daysLeft
+                + (daysLeft == 1 ? " día" : " días") + " — " + clinicName;
+        String html = buildTrialExpiringHtml(ownerName, clinicName, daysLeft, billingUrl);
+        enviar(toEmail, asunto, html);
+    }
+
+    @Override
+    public void sendTrialExpired(String toEmail, String ownerName,
+            String clinicName, String billingUrl) {
+
+        String asunto = "🔒 Tu período de prueba ha vencido — " + clinicName;
+        String html = buildTrialExpiredHtml(ownerName, clinicName, billingUrl);
+        enviar(toEmail, asunto, html);
+    }
+
     // ── Método central de envío ──────────────────────────────────────────────
 
     /**
@@ -270,5 +289,90 @@ public class ResendEmailServiceImpl implements EmailService {
                 </div>
                 </body></html>
                 """.formatted(nombre, servicio, fechaHora, motivoHtml);
+    }
+
+    /** Plantilla HTML — aviso de trial próximo a vencer (3 días antes). */
+    private String buildTrialExpiringHtml(String ownerName, String clinicName,
+            int daysLeft, String billingUrl) {
+        String diasTexto = daysLeft == 1 ? "1 día" : daysLeft + " días";
+        return """
+                <!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"></head>
+                <body style="font-family:Arial,sans-serif;background:#F7FAF9;padding:20px;">
+                <div style="max-width:520px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.08);">
+                  <div style="background:linear-gradient(135deg,#B86000,#E67E22);padding:32px 28px;text-align:center;">
+                    <h1 style="color:#fff;margin:0;font-size:22px;font-weight:800;">⏳ Tu prueba gratuita vence pronto</h1>
+                    <p style="color:rgba(255,255,255,0.9);margin:8px 0 0;font-size:14px;">%s</p>
+                  </div>
+                  <div style="padding:28px;">
+                    <p style="color:#2C3E35;font-size:15px;">Hola <strong>%s</strong>,</p>
+                    <p style="color:#4A6B60;font-size:14px;line-height:1.7;">
+                      Tu período de prueba gratuito en <strong>%s</strong> vence en
+                      <strong style="color:#E67E22;">%s</strong>.
+                    </p>
+                    <p style="color:#4A6B60;font-size:14px;line-height:1.7;">
+                      Cuando expire, la creación de nuevas citas y el registro de pacientes quedará
+                      bloqueado hasta que actives una suscripción.
+                    </p>
+                    <div style="background:#FFF8E7;border:1.5px solid #F5A623;border-radius:8px;padding:16px;margin:20px 0;">
+                      <p style="margin:0;color:#7D4B00;font-size:14px;font-weight:700;">
+                        💡 Activa tu plan ahora y mantén el acceso sin interrupciones.
+                      </p>
+                    </div>
+                    <div style="text-align:center;margin:24px 0;">
+                      <a href="%s" style="background:#E67E22;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:800;font-size:15px;">
+                        Activar suscripción →
+                      </a>
+                    </div>
+                    <p style="color:#9DBFBA;font-size:12px;text-align:center;margin-top:16px;">
+                      Planes desde $119.000 COP/mes · Cancela en cualquier momento
+                    </p>
+                  </div>
+                  <div style="background:#F4FAF8;padding:16px 28px;text-align:center;border-top:1px solid #E3EFEC;">
+                    <p style="color:#9DBFBA;font-size:12px;margin:0;">Ecosalud Market · soporte@ecosalud.com</p>
+                  </div>
+                </div>
+                </body></html>
+                """.formatted(clinicName, ownerName, clinicName, diasTexto, billingUrl);
+    }
+
+    /** Plantilla HTML — aviso de trial vencido (cuenta pasa a OVERDUE). */
+    private String buildTrialExpiredHtml(String ownerName, String clinicName, String billingUrl) {
+        return """
+                <!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"></head>
+                <body style="font-family:Arial,sans-serif;background:#F7FAF9;padding:20px;">
+                <div style="max-width:520px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.08);">
+                  <div style="background:linear-gradient(135deg,#6B0000,#C0392B);padding:32px 28px;text-align:center;">
+                    <h1 style="color:#fff;margin:0;font-size:22px;font-weight:800;">🔒 Período de prueba vencido</h1>
+                    <p style="color:rgba(255,255,255,0.9);margin:8px 0 0;font-size:14px;">%s</p>
+                  </div>
+                  <div style="padding:28px;">
+                    <p style="color:#2C3E35;font-size:15px;">Hola <strong>%s</strong>,</p>
+                    <p style="color:#4A6B60;font-size:14px;line-height:1.7;">
+                      El período de prueba gratuito de <strong>%s</strong> ha vencido.
+                      Tu cuenta está actualmente en estado <strong style="color:#C0392B;">Vencida</strong>.
+                    </p>
+                    <div style="background:#FDE8E8;border:1.5px solid #C0392B;border-radius:8px;padding:16px;margin:20px 0;">
+                      <p style="margin:0 0 8px;color:#7D0000;font-size:14px;font-weight:700;">¿Qué significa esto?</p>
+                      <ul style="margin:0;padding-left:18px;color:#7D0000;font-size:13px;line-height:1.8;">
+                        <li>Los datos de tus pacientes y citas existentes están seguros.</li>
+                        <li>No puedes crear nuevas citas ni registrar nuevos pacientes.</li>
+                        <li>Al activar tu plan, el acceso completo se restaura inmediatamente.</li>
+                      </ul>
+                    </div>
+                    <div style="text-align:center;margin:24px 0;">
+                      <a href="%s" style="background:#3DAA96;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:800;font-size:15px;">
+                        Activar suscripción →
+                      </a>
+                    </div>
+                    <p style="color:#9DBFBA;font-size:12px;text-align:center;margin-top:16px;">
+                      ¿Tienes preguntas? Escríbenos a soporte@ecosalud.com
+                    </p>
+                  </div>
+                  <div style="background:#F4FAF8;padding:16px 28px;text-align:center;border-top:1px solid #E3EFEC;">
+                    <p style="color:#9DBFBA;font-size:12px;margin:0;">Ecosalud Market · soporte@ecosalud.com</p>
+                  </div>
+                </div>
+                </body></html>
+                """.formatted(clinicName, ownerName, clinicName, billingUrl);
     }
 }

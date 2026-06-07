@@ -6,7 +6,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import com.demo.ecosalud.model.dto.CreateTenantRequest;
+import com.demo.ecosalud.model.dto.ResetAdminPasswordRequest;
+import com.demo.ecosalud.model.dto.RevenueDTO;
 import com.demo.ecosalud.model.dto.TenantDTO;
+import com.demo.ecosalud.model.dto.TenantStatsDTO;
+import com.demo.ecosalud.model.dto.UpdateTenantRequest;
+import com.demo.ecosalud.service.RevenueService;
 import com.demo.ecosalud.service.TenantService;
 
 import jakarta.validation.Valid;
@@ -34,7 +39,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class PlatformController {
 
-    private final TenantService tenantService;
+    private final TenantService  tenantService;
+    private final RevenueService revenueService;
 
     // ── Tenants ──────────────────────────────────────────────────────────────
 
@@ -94,5 +100,65 @@ public class PlatformController {
     public TenantDTO verificarDominio(@PathVariable Long id,
                                       @RequestParam String domain) {
         return tenantService.verifyCustomDomain(id, domain);
+    }
+
+    /**
+     * Actualiza la información editable de una clínica.
+     * Solo se modifican los campos presentes en el body (patch semántico).
+     */
+    @PutMapping("/tenants/{id}")
+    public TenantDTO actualizarTenant(@PathVariable Long id,
+                                      @RequestBody UpdateTenantRequest request) {
+        return tenantService.updateTenant(id, request);
+    }
+
+    /**
+     * Restablece la contraseña del administrador de una clínica.
+     * Acción de soporte — requiere verificar la identidad del cliente previamente.
+     */
+    @PatchMapping("/tenants/{id}/admin-password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void resetAdminPassword(@PathVariable Long id,
+                                   @Valid @RequestBody ResetAdminPasswordRequest request) {
+        tenantService.resetAdminPassword(id, request);
+    }
+
+    /**
+     * Retorna estadísticas de uso del tenant: usuarios, citas, especialistas, etc.
+     * Útil para el equipo de soporte al revisar el estado de una clínica.
+     */
+    @GetMapping("/tenants/{id}/stats")
+    public TenantStatsDTO obtenerStats(@PathVariable Long id) {
+        return tenantService.getTenantStats(id);
+    }
+
+    /**
+     * Elimina permanentemente una clínica: schema PostgreSQL + datos + registro.
+     * <strong>IRREVERSIBLE.</strong> Requiere confirmación con header {@code X-Confirm-Delete: true}.
+     */
+    @DeleteMapping("/tenants/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void eliminarTenant(@PathVariable Long id,
+                               @RequestHeader(value = "X-Confirm-Delete", required = false) String confirm) {
+        if (!"true".equalsIgnoreCase(confirm)) {
+            throw new IllegalArgumentException(
+                    "Eliminación no confirmada. Envía el header 'X-Confirm-Delete: true'.");
+        }
+        tenantService.deleteTenant(id);
+    }
+
+    // ── Revenue ──────────────────────────────────────────────────────────────
+
+    /**
+     * Dashboard de ingresos de la plataforma.
+     *
+     * <p>Retorna MRR, ARR, distribución por plan, tasa de conversión
+     * y crecimiento mensual de los últimos 6 meses.</p>
+     *
+     * <p>Solo accesible por el super-administrador.</p>
+     */
+    @GetMapping("/revenue")
+    public RevenueDTO getRevenue() {
+        return revenueService.getRevenueSummary();
     }
 }

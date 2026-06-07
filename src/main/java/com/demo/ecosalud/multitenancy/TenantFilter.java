@@ -40,6 +40,16 @@ public class TenantFilter extends OncePerRequestFilter {
 
     private final JwtUtils jwtUtils;
 
+    /**
+     * Rutas que siempre usan el schema público para autenticación.
+     * El admin de cada clínica vive en {@code public.users} y se autentica
+     * contra ese schema independientemente del tenant header enviado.
+     */
+    private static final String[] PUBLIC_AUTH_PATHS = {
+        "/api/auth/",
+        "/api/user/register"
+    };
+
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
@@ -47,7 +57,17 @@ public class TenantFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         try {
-            String tenantSchema = extractTenantFromRequest(request);
+            String path = request.getRequestURI();
+            String tenantSchema;
+
+            // Autenticación siempre contra schema público (admins en public.users)
+            if (isPublicAuthPath(path)) {
+                tenantSchema = TenantContext.PUBLIC_SCHEMA;
+                log.debug("[TenantFilter] ruta de auth — usando schema público");
+            } else {
+                tenantSchema = extractTenantFromRequest(request);
+            }
+
             TenantContext.set(tenantSchema);
             log.debug("[TenantFilter] tenant activo: {}", tenantSchema);
             filterChain.doFilter(request, response);
@@ -55,6 +75,13 @@ public class TenantFilter extends OncePerRequestFilter {
             // CRÍTICO: siempre limpiar el contexto para evitar fugas entre hilos
             TenantContext.clear();
         }
+    }
+
+    private boolean isPublicAuthPath(String path) {
+        for (String prefix : PUBLIC_AUTH_PATHS) {
+            if (path.startsWith(prefix)) return true;
+        }
+        return false;
     }
 
     /**

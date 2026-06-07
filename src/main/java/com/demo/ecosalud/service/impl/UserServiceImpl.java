@@ -9,6 +9,10 @@ import jakarta.transaction.Transactional;
 
 import com.demo.ecosalud.enums.RolUser;
 import com.demo.ecosalud.enums.UserStatus;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 import com.demo.ecosalud.exception.ResourceNotFoundException;
 import com.demo.ecosalud.mapper.UserMapper;
 import com.demo.ecosalud.model.dto.UserDTO;
@@ -23,6 +27,13 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+
+    @Override
+    public List<UserDTO> getAllUsers() {
+        return userRepository.findAll().stream()
+                .map(UserMapper::toDTO)
+                .collect(Collectors.toList());
+    }
 
     @Override
     public UserDTO register(UserDTO userDTO) {
@@ -41,6 +52,9 @@ public class UserServiceImpl implements UserService {
         }
         if (user.getStatus() == null) {
             user.setStatus(UserStatus.ACTIVO);
+        }
+        if (user.getCreatedAt() == null) {
+            user.setCreatedAt(LocalDateTime.now());
         }
 
         User save = userRepository.save(user);

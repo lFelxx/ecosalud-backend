@@ -67,6 +67,25 @@ public class SchemaInitializationService {
         }
     }
 
+    /**
+     * Aplica migraciones a un schema de tenant ya existente.
+     * Crea tablas que falten (usa IF NOT EXISTS — idempotente).
+     * Útil para tenants creados antes de añadir nuevas tablas al schema base.
+     *
+     * @param schemaName schema existente (ej. {@code tenant_dra_angelica_camacho})
+     */
+    public void migrateSchema(String schemaName) {
+        log.info("[Migration] Aplicando migración al schema: {}", schemaName);
+        try (Connection conn = dataSource.getConnection();
+             Statement stmt = conn.createStatement()) {
+            createTables(stmt, schemaName);
+            log.info("[Migration] Schema '{}' actualizado correctamente.", schemaName);
+        } catch (SQLException e) {
+            log.error("[Migration] Error al migrar schema '{}': {}", schemaName, e.getMessage());
+            // No lanza excepción — la migración es best-effort
+        }
+    }
+
     /** Elimina el schema completo de un tenant. Solo super-admin puede invocar esto. */
     public void dropSchema(String schemaName) {
         log.warn("Eliminando schema de tenant: {}", schemaName);

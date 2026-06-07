@@ -40,6 +40,7 @@ public class UserMapper {
         dto.setEmail(user.getEmail());
         dto.setRole(user.getRole());
         dto.setStatus(user.getStatus());
+        dto.setCreatedAt(user.getCreatedAt());
         // Contraseña omitida intencionalmente en respuestas
         return dto;
     }

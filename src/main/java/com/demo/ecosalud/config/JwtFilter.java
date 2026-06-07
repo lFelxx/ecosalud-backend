@@ -7,6 +7,7 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.demo.ecosalud.multitenancy.TenantContext;
 import com.demo.ecosalud.service.impl.UserDetailsServiceImpl;
 import com.demo.ecosalud.util.JwtUtils;
 
@@ -52,7 +53,17 @@ public class JwtFilter extends OncePerRequestFilter {
         if (username != null && authentication == null) {
             log.info("Cargando usuario al contexto: {}", username);
             try {
-                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                // La validación del JWT siempre busca el usuario en el schema público,
+                // ya que los admins y usuarios base se almacenan en public.users.
+                // El schema del tenant aplica para operaciones de negocio, no de auth.
+                String savedTenant = TenantContext.get();
+                TenantContext.set(TenantContext.PUBLIC_SCHEMA);
+                UserDetails userDetails;
+                try {
+                    userDetails = userDetailsService.loadUserByUsername(username);
+                } finally {
+                    TenantContext.set(savedTenant);
+                }
 
                 if (jwtUtils.validateToken(jwtToken, userDetails)) {
                     var authToken = new UsernamePasswordAuthenticationToken(
@@ -65,7 +76,7 @@ public class JwtFilter extends OncePerRequestFilter {
                     log.info("Usuario autenticado correctamente: {}", username);
                 }
             } catch (Exception e) {
-                log.error("Usuario no encontrado: {}", e.getMessage());
+                log.error("Usuario no encontrado o token inválido: {}", e.getMessage());
             }
         }
         filterChain.doFilter(request, response);
