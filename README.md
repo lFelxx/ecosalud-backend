@@ -1,6 +1,6 @@
 # Ecosalud — Backend
 
-API REST que potencia la plataforma **Ecosalud**, un centro de salud integral que ofrece terapias alternativas, gestión de citas médicas y administración de usuarios. Desarrollada con Spring Boot 3.4.5, Spring Security 6 y PostgreSQL.
+API REST que potencia la plataforma **Ecosalud** , un centro de salud integral que ofrece terapias alternativas, gestión de citas médicas y administración de usuarios. Desarrollada con Spring Boot 3.4.5, Spring Security 6 y PostgreSQL.
 
 ---
 
