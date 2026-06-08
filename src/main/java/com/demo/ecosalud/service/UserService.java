@@ -2,11 +2,18 @@ package com.demo.ecosalud.service;
 
 import com.demo.ecosalud.model.dto.UserDTO;
 
+import java.util.List;
+
+/**
+ * Contrato del servicio de usuarios.
+ * Define las operaciones CRUD disponibles para la capa de negocio.
+ */
 public interface UserService {
 
-    /**
-     * Registra un usuario nuevo en el sistema.
-     */
+    /** Lista todos los usuarios del tenant activo. */
+    List<UserDTO> getAllUsers();
+
+    /** Registra un usuario nuevo; valida duplicados de email. */
     UserDTO register(UserDTO userDTO);
 
     /**

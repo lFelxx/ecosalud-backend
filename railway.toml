@@ -1,0 +1,49 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# Ecosalud Backend — Configuración de Railway
+#
+# Railway detecta este archivo automáticamente al hacer deploy.
+# Documentación: https://docs.railway.app/reference/config-as-code
+# ═══════════════════════════════════════════════════════════════════════════════
+
+[build]
+# Usar el Dockerfile del proyecto en lugar del Nixpacks auto-detect
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+# Healthcheck: Railway espera a que este endpoint responda 200 antes de
+# declarar el deploy exitoso y enrutar tráfico al nuevo contenedor.
+healthcheckPath = "/api/health"
+
+# Segundos máximos para que el healthcheck responda (Spring Boot con JPA puede
+# tardar 60-90s en el primer arranque mientras conecta a PostgreSQL y aplica DDL).
+healthcheckTimeout = 300
+
+# Reiniciar automáticamente si el proceso muere con error
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+
+# ── Variables de entorno requeridas (configurar en Railway → Settings → Variables) ──
+#
+# DATABASE_URL        = URL de PostgreSQL de Railway (se genera automáticamente
+#                       si agregas el plugin "PostgreSQL" al proyecto)
+#                       Ejemplo: postgresql://postgres:pass@host:5432/railway
+#
+# DATABASE_USERNAME   = postgres (o el usuario que Railway asigne)
+# DATABASE_PASSWORD   = (contraseña generada por Railway)
+#
+# JWT_SECRET          = string base64 de 256 bits mínimo
+#                       Generar: openssl rand -base64 32
+#
+# FRONTEND_URL        = URL de Vercel donde está el frontend
+#                       Ejemplo: https://ecosalud-frontend.vercel.app
+#
+# RESEND_API_KEY      = API key de Resend para emails transaccionales
+#                       Obtener en: https://resend.com/api-keys
+#
+# CLOUDINARY_URL      = URL de Cloudinary para almacenamiento de media
+#                       Formato: cloudinary://api_key:api_secret@cloud_name
+#                       Obtener en: https://cloudinary.com → Dashboard → API Keys
+#
+# DDL_AUTO            = update  (por defecto — Hibernate aplica migraciones automáticas)
+#                       En producción estable considerar: validate

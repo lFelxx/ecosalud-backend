@@ -1,15 +1,19 @@
 package com.demo.ecosalud.model.entities;
 
-import java.time.LocalDateTime;
-
-import com.demo.ecosalud.enums.AppointmentSatus;
-
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+
 /**
- * Representa una cita agendada en el sistema.
- * Vincula un paciente, un terapeuta y un servicio del catálogo en una fecha específica.
+ * Entidad JPA para las citas médicas del tenant.
+ * Mapea a la tabla {@code appointments} en el schema del tenant activo.
+ *
+ * <p>Los FKs (patient_id, specialist_id, service_id) se almacenan como
+ * Long simples para compatibilidad con el schema multi-tenant;
+ * el nombre del paciente y el servicio se resuelven en la capa de servicio.</p>
  */
 @Entity
 @Data
@@ -21,27 +25,41 @@ public class Appointment {
     @Column(name = "id", nullable = false)
     private Long id;
 
-    /** Paciente que agenda la cita. */
-    @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    /** FK al paciente en {@code tenant.users}. */
+    @Column(name = "patient_id", nullable = false)
+    private Long patientId;
 
-    /** Terapeuta asignado para atender la cita. */
-    @ManyToOne
-    @JoinColumn(name = "therapist_id", nullable = false)
-    private Therapist therapist;
+    /** FK al especialista en {@code tenant.specialists} (opcional). */
+    @Column(name = "specialist_id")
+    private Long specialistId;
 
-    /** Servicio del catálogo que se prestará en la cita. */
-    @ManyToOne
-    @JoinColumn(name = "catalog_id", nullable = false)
-    private Catalog catalog;
+    /** FK al servicio en {@code tenant.services} (opcional). */
+    @Column(name = "service_id")
+    private Long serviceId;
 
-    /** Fecha y hora de inicio de la cita. */
-    @Column(name = "date", nullable = false)
-    private LocalDateTime date;
+    @Column(name = "appointment_date", nullable = false)
+    private LocalDate appointmentDate;
 
-    /** Estado actual de la cita en su ciclo de vida. */
-    @Column(name = "status", nullable = false)
-    @Enumerated(EnumType.STRING)
-    private AppointmentSatus status;
+    @Column(name = "appointment_time", nullable = false)
+    private LocalTime appointmentTime;
+
+    /**
+     * Estado de la cita: PENDIENTE | CONFIRMADA | COMPLETADA | CANCELADA.
+     * Se almacena como String para no depender del enum {@code AppointmentSatus}
+     * y alinearse directamente con los valores del schema.
+     */
+    @Column(name = "status", nullable = false, length = 50)
+    private String status = "PENDIENTE";
+
+    @Column(name = "notes", columnDefinition = "TEXT")
+    private String notes;
+
+    @Column(name = "cancellation_reason", columnDefinition = "TEXT")
+    private String cancellationReason;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 }
