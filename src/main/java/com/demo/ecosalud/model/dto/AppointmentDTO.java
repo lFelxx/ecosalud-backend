@@ -1,40 +1,43 @@
 package com.demo.ecosalud.model.dto;
 
-import java.time.LocalDateTime;
-
-import com.demo.ecosalud.enums.AppointmentSatus;
-
-import jakarta.validation.constraints.Future;
-import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+
 /**
- * DTO para crear, actualizar y retornar datos de una cita.
- * El frontend puede elegir primero especialista o primero fecha; el backend
- * solo necesita recibir los tres datos (catalogId, therapistId, date) al confirmar.
+ * DTO para citas médicas.
+ *
+ * <p>Los campos {@code patientName}, {@code patientEmail} y {@code serviceName}
+ * son solo de salida — el backend los resuelve a partir de los IDs.</p>
  */
 @Data
 public class AppointmentDTO {
-
     private Long id;
 
-    @NotNull(message = "El ID del paciente es obligatorio")
-    private Long userId;
+    // Paciente
+    private Long patientId;
+    private String patientName;
+    private String patientEmail;
 
-    @NotNull(message = "El ID del terapeuta es obligatorio")
-    private Long therapistId;
+    // Servicio / Especialista
+    private Long serviceId;
+    private String serviceName;
+    private Long specialistId;
 
-    @NotNull(message = "El ID del servicio del catálogo es obligatorio")
-    private Long catalogId;
+    // Fecha y hora
+    private LocalDate appointmentDate;
+    private LocalTime appointmentTime;
 
-    @NotNull(message = "La fecha es obligatoria")
-    @Future(message = "La fecha de la cita debe ser en el futuro")
-    private LocalDateTime date;
+    /**
+     * Estado: PENDIENTE | CONFIRMADA | COMPLETADA | CANCELADA.
+     * El frontend mapea a: pending | confirmed | completed | cancelled.
+     */
+    private String status;
+    private String notes;
+    private String cancellationReason;
 
-    private AppointmentSatus status;
-
-    // Campos de respuesta: nombres para evitar llamadas adicionales desde el frontend
-    private String userName;
-    private String therapistName;
-    private String catalogName;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }

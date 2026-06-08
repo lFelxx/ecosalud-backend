@@ -1,101 +1,148 @@
 package com.demo.ecosalud.controller;
 
-import com.demo.ecosalud.enums.AppointmentSatus;
 import com.demo.ecosalud.model.dto.AppointmentDTO;
-import com.demo.ecosalud.model.dto.RescheduleRequestDTO;
 import com.demo.ecosalud.service.AppointmentService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
+import com.demo.ecosalud.service.PlanLimitsService;
+import com.demo.ecosalud.service.impl.UserDetailsImpl;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
 
 /**
- * Controlador REST para la gestión de citas médicas.
- * Base URL: {@code /api/appointments}
+ * Controlador REST para citas médicas.
+ *
+ * <p>Ruta base: {@code /api/appointments}</p>
+ *
+ * <table>
+ *   <tr><th>Método</th><th>Ruta</th><th>Rol mínimo</th><th>Descripción</th></tr>
+ *   <tr><td>GET</td><td>/api/appointments</td><td>ADMIN/EDITOR: todas · USER: solo las propias</td><td>Lista citas</td></tr>
+ *   <tr><td>GET</td><td>/api/appointments/{id}</td><td>autenticado</td><td>Detalle</td></tr>
+ *   <tr><td>POST</td><td>/api/appointments</td><td>ADMIN/EDITOR</td><td>Crear cita (admin)</td></tr>
+ *   <tr><td>POST</td><td>/api/appointments/book</td><td>cualquier rol autenticado</td><td>Auto-agenda del paciente — patientId forzado del JWT</td></tr>
+ *   <tr><td>PUT</td><td>/api/appointments/{id}</td><td>ADMIN/EDITOR</td><td>Actualizar</td></tr>
+ *   <tr><td>PATCH</td><td>/api/appointments/{id}/status</td><td>ADMIN/EDITOR</td><td>Cambiar estado + email</td></tr>
+ *   <tr><td>DELETE</td><td>/api/appointments/{id}</td><td>ADMIN/EDITOR</td><td>Eliminar</td></tr>
+ * </table>
  */
-@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/appointments")
-@Tag(name = "Citas", description = "Agendamiento, reprogramación y cancelación de citas médicas")
-@SecurityRequirement(name = "bearerAuth")
+@RequiredArgsConstructor
 public class AppointmentController {
 
-    private final AppointmentService appointmentService;
+    private final AppointmentService service;
+    private final PlanLimitsService  planLimits;
 
-    @Operation(summary = "Agendar cita", description = "Crea una nueva cita validando disponibilidad del terapeuta y conflictos de horario")
-    @ApiResponse(responseCode = "200", description = "Cita agendada en estado CONFIRMADA")
-    @ApiResponse(responseCode = "404", description = "Paciente, terapeuta o servicio no encontrado")
-    @ApiResponse(responseCode = "422", description = "Regla de negocio violada (conflicto de horario, terapeuta no disponible)")
-    @PostMapping
-    public AppointmentDTO scheduleAppointment(@Valid @RequestBody AppointmentDTO appointmentDTO) {
-        return appointmentService.scheduleAppointment(appointmentDTO);
-    }
+    // ── Consultas ─────────────────────────────────────────────────────────────
 
-    @Operation(summary = "Obtener cita por ID")
-    @ApiResponse(responseCode = "200", description = "Cita encontrada")
-    @ApiResponse(responseCode = "404", description = "Cita no encontrada")
-    @GetMapping("/{id}")
-    public AppointmentDTO getAppointmentById(@Parameter(description = "ID de la cita") @PathVariable Long id) {
-        return appointmentService.getAppointmentById(id);
-    }
-
-    @Operation(summary = "Listar todas las citas")
+    /**
+     * Lista citas con aislamiento de rol:
+     * <ul>
+     *   <li>USER (paciente): solo ve sus propias citas, ignorando el parámetro {@code patientId}.</li>
+     *   <li>ADMIN/EDITOR: ve todas o filtra por {@code ?patientId=N}.</li>
+     * </ul>
+     */
     @GetMapping
-    public List<AppointmentDTO> getAllAppointments() {
-        return appointmentService.getAllAppointments();
+    public List<AppointmentDTO> list(
+            @RequestParam(required = false) Long patientId,
+            @AuthenticationPrincipal UserDetailsImpl principal) {
+
+        // Pacientes solo acceden a sus propias citas
+        if (principal != null && isPatientRole(principal)) {
+            return service.getByPatientId(principal.getUser().getId());
+        }
+
+        return patientId != null ? service.getByPatientId(patientId) : service.getAll();
     }
 
-    @Operation(summary = "Listar citas de un paciente")
-    @ApiResponse(responseCode = "404", description = "Paciente no encontrado")
-    @GetMapping("/user/{userId}")
-    public List<AppointmentDTO> getAppointmentsByUser(
-            @Parameter(description = "ID del paciente") @PathVariable Long userId) {
-        return appointmentService.getAppointmentsByUser(userId);
+    @GetMapping("/{id}")
+    public AppointmentDTO getById(@PathVariable Long id) {
+        return service.getById(id);
     }
 
-    @Operation(summary = "Listar citas por estado")
-    @GetMapping("/status/{status}")
-    public List<AppointmentDTO> getAppointmentsByStatus(
-            @Parameter(description = "Estado de la cita: PENDIENTE, CONFIRMADA, CANCELADA, REPROGRAMADA")
-            @PathVariable AppointmentSatus status) {
-        return appointmentService.getAppointmentsByStatus(status);
+    // ── Creación ──────────────────────────────────────────────────────────────
+
+    /**
+     * Crea una cita desde el panel de administración.
+     * Permite especificar cualquier {@code patientId}.
+     * Uso exclusivo de roles ADMIN y EDITOR.
+     */
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public AppointmentDTO create(
+            @RequestBody AppointmentDTO dto,
+            @AuthenticationPrincipal UserDetailsImpl principal) {
+
+        if (principal != null && isPatientRole(principal)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Usa /api/appointments/book para agendar tu propia cita.");
+        }
+        planLimits.checkAppointmentLimit(); // 402 si se superó la cuota mensual del plan
+        return service.create(dto);
     }
 
-    @Operation(summary = "Reprogramar cita", description = "Cambia la fecha de la cita. No aplica a citas canceladas.")
-    @ApiResponse(responseCode = "200", description = "Cita reprogramada")
-    @ApiResponse(responseCode = "422", description = "Cita cancelada o conflicto en la nueva fecha")
-    @PutMapping("/{id}/reschedule")
-    public AppointmentDTO rescheduleAppointment(
-            @Parameter(description = "ID de la cita") @PathVariable Long id,
-            @Valid @RequestBody RescheduleRequestDTO request) {
-        return appointmentService.rescheduleAppointment(id, request.getNewDate());
+    /**
+     * Auto-agenda de citas para el paciente autenticado.
+     *
+     * <p><b>Seguridad:</b> el {@code patientId} se toma <em>siempre</em> del JWT,
+     * nunca del cuerpo de la petición. Así el paciente solo puede agendar para
+     * sí mismo aunque envíe un ID diferente.</p>
+     *
+     * <p>La cita se crea con estado {@code PENDIENTE}. El especialista o admin
+     * la confirmará desde el panel y el paciente recibirá un email de confirmación.</p>
+     */
+    @PostMapping("/book")
+    @ResponseStatus(HttpStatus.CREATED)
+    public AppointmentDTO book(
+            @RequestBody AppointmentDTO dto,
+            @AuthenticationPrincipal UserDetailsImpl principal) {
+
+        if (principal == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Autenticación requerida.");
+        }
+
+        // Forzar siempre el patientId del JWT — ignorar lo que venga en el body
+        dto.setPatientId(principal.getUser().getId());
+        dto.setStatus("PENDIENTE");
+
+        planLimits.checkAppointmentLimit(); // 402 si se superó la cuota mensual del plan
+        return service.create(dto);
     }
 
-    @Operation(summary = "Cancelar cita")
-    @ApiResponse(responseCode = "200", description = "Cita cancelada")
-    @ApiResponse(responseCode = "422", description = "La cita ya está cancelada")
-    @PutMapping("/{id}/cancel")
-    public AppointmentDTO cancelAppointment(@Parameter(description = "ID de la cita") @PathVariable Long id) {
-        return appointmentService.cancelAppointment(id);
+    // ── Modificación ──────────────────────────────────────────────────────────
+
+    @PutMapping("/{id}")
+    public AppointmentDTO update(@PathVariable Long id, @RequestBody AppointmentDTO dto) {
+        return service.update(id, dto);
     }
 
-    @Operation(summary = "Confirmar cita")
-    @ApiResponse(responseCode = "200", description = "Cita confirmada")
-    @ApiResponse(responseCode = "422", description = "No se puede confirmar una cita cancelada")
-    @PutMapping("/{id}/confirm")
-    public AppointmentDTO confirmAppointment(@Parameter(description = "ID de la cita") @PathVariable Long id) {
-        return appointmentService.confirmAppointment(id);
+    /**
+     * Cambia el estado de una cita. Dispara email al paciente si el estado
+     * es {@code CONFIRMADA} o {@code CANCELADA}.
+     *
+     * <p>Body: {@code { "status": "CONFIRMADA", "cancellationReason": "..." }}</p>
+     */
+    @PatchMapping("/{id}/status")
+    public AppointmentDTO updateStatus(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> body) {
+        return service.updateStatus(id, body.get("status"), body.get("cancellationReason"));
     }
 
-    @Operation(summary = "Eliminar cita", description = "Eliminación permanente. Solo para administradores.")
     @DeleteMapping("/{id}")
-    public void deleteAppointment(@Parameter(description = "ID de la cita") @PathVariable Long id) {
-        appointmentService.deleteAppointment(id);
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable Long id) {
+        service.delete(id);
+    }
+
+    // ── helpers ───────────────────────────────────────────────────────────────
+
+    private boolean isPatientRole(UserDetailsImpl p) {
+        String role = p.getUser().getRole() != null ? p.getUser().getRole().name() : "";
+        return "USER".equalsIgnoreCase(role) || "PATIENT".equalsIgnoreCase(role);
     }
 }

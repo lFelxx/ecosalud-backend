@@ -1,6 +1,11 @@
 package com.demo.ecosalud.controller;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
+
+import com.demo.ecosalud.enums.RolUser;
 import com.demo.ecosalud.model.dto.UserDTO;
+import com.demo.ecosalud.service.PlanLimitsService;
 import com.demo.ecosalud.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -12,9 +17,19 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 /**
- * Controlador REST para la gestión de usuarios pacientes.
- * Base URL: {@code /api/user}
+ * Controlador REST para la gestión de usuarios del tenant.
+ *
+ * <p>Ruta base: {@code /api/user}</p>
+ * <ul>
+ *   <li>GET    /           — Lista todos los usuarios del tenant (JWT requerido)</li>
+ *   <li>POST   /register   — Registro de usuario en el tenant (JWT requerido)</li>
+ *   <li>GET    /{id}       — Consultar usuario por ID</li>
+ *   <li>PUT    /{id}       — Actualizar usuario</li>
+ *   <li>DELETE /{id}       — Eliminar usuario</li>
+ * </ul>
  */
 @RequiredArgsConstructor
 @RestController
@@ -22,21 +37,25 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "Usuarios", description = "Registro y consulta de usuarios pacientes")
 public class UserController {
 
-    private final UserService userService;
+    private final UserService      userService;
+    private final PlanLimitsService planLimits;
 
-    /**
-     * Registra un nuevo usuario paciente en el sistema.
-     *
-     * @param user datos del usuario a registrar
-     * @return usuario creado con su ID asignado
-     */
-    @Operation(summary = "Registrar usuario", description = "Crea una cuenta de paciente. Endpoint público, no requiere token.")
-    @ApiResponse(responseCode = "200", description = "Usuario registrado exitosamente",
-        content = @Content(schema = @Schema(implementation = UserDTO.class)))
-    @ApiResponse(responseCode = "409", description = "Email o nombre ya registrado")
+    /** Lista todos los usuarios del tenant activo (pacientes, terapeutas, admins). */
+    @GetMapping
+    public List<UserDTO> listarUsuarios() {
+        return userService.getAllUsers();
+    }
+
+    /** Registra un nuevo usuario en el tenant activo. */
     @PostMapping("/register")
-    public UserDTO userRegister(@RequestBody UserDTO user) {
-        return userService.register(user);
+    @ResponseStatus(HttpStatus.CREATED)
+    public UserDTO registrarUsuario(@Valid @RequestBody UserDTO userDTO) {
+        // Solo verifica el límite de pacientes para el rol USER;
+        // terapeutas y administradores no cuentan contra este cupo.
+        if (userDTO.getRole() == null || userDTO.getRole() == RolUser.USER) {
+            planLimits.checkPatientLimit(); // 402 si se superó la cuota del plan
+        }
+        return userService.register(userDTO);
     }
 
     /**

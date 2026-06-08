@@ -33,3 +33,15 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Claude Code (archivos de sesión local, no versionar) ###
+.claude/
+.vite/
+
+### Variables de entorno (nunca versionar credenciales) ###
+.env
+.env.local
+.env.*.local
+
+### Media / Uploads locales (en producción se usa Cloudinary) ###
+uploads/

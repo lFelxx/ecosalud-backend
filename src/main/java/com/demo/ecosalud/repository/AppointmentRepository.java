@@ -1,36 +1,45 @@
 package com.demo.ecosalud.repository;
 
-import java.time.LocalDateTime;
-import java.util.List;
-
+import com.demo.ecosalud.model.entities.Appointment;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.demo.ecosalud.enums.AppointmentSatus;
-import com.demo.ecosalud.model.entities.Appointment;
+import java.time.LocalDate;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * Repositorio JPA para la entidad {@link Appointment}.
  */
 public interface AppointmentRepository extends JpaRepository<Appointment, Long> {
 
-    /** Retorna todas las citas de un paciente. */
-    List<Appointment> findByUserId(Long userId);
+    /** Citas de un paciente específico, ordenadas por fecha descendente. */
+    List<Appointment> findByPatientIdOrderByAppointmentDateDesc(Long patientId);
 
-    /** Retorna todas las citas asignadas a un terapeuta. */
-    List<Appointment> findByTherapistId(Long therapistId);
-
-    /** Retorna todas las citas filtradas por estado. */
-    List<Appointment> findByStatus(AppointmentSatus status);
+    /** Citas con un estado específico (PENDIENTE, CONFIRMADA, etc.). */
+    List<Appointment> findByStatus(String status);
 
     /**
-     * Detecta conflicto de horario para el paciente:
-     * misma fecha, mismo paciente, excluyendo citas canceladas.
+     * Retorna todas las citas de una fecha específica cuyo estado esté dentro de la colección.
+     * Usado por {@code AppointmentReminderJob} para buscar citas de mañana que necesitan recordatorio.
+     *
+     * @param date     fecha exacta de la cita
+     * @param statuses estados aceptados (p.ej. PENDIENTE, CONFIRMADA)
      */
-    Boolean existsByUserIdAndDateAndStatusNot(Long userId, LocalDateTime date, AppointmentSatus status);
+    List<Appointment> findByAppointmentDateAndStatusIn(LocalDate date, Collection<String> statuses);
 
     /**
-     * Detecta conflicto de horario para el terapeuta:
-     * misma fecha, mismo terapeuta, excluyendo citas canceladas.
+     * Retorna citas cuya fecha esté en el rango [from, to] (inclusivo) y estado sea uno de los dados.
+     * Usado por el panel de notificaciones para mostrar los próximos recordatorios.
      */
-    Boolean existsByTherapistIdAndDateAndStatusNot(Long therapistId, LocalDateTime date, AppointmentSatus status);
+    List<Appointment> findByAppointmentDateBetweenAndStatusInOrderByAppointmentDateAscAppointmentTimeAsc(
+            LocalDate from, LocalDate to, Collection<String> statuses);
+
+    /**
+     * Cuenta citas cuya fecha de realización cae en el rango [start, end] (inclusivo).
+     * Usado por {@code PlanLimitsService} para verificar el límite mensual de citas.
+     *
+     * @param start primer día del mes
+     * @param end   último día del mes
+     */
+    long countByAppointmentDateBetween(LocalDate start, LocalDate end);
 }

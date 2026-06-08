@@ -19,84 +19,106 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import com.demo.ecosalud.multitenancy.TenantFilter;
 import com.demo.ecosalud.service.impl.UserDetailsServiceImpl;
 
 import lombok.RequiredArgsConstructor;
-import java.util.List;
 
+/**
+ * Configuración central de seguridad de la plataforma Ecosalud Market.
+ *
+ * <ul>
+ *   <li>CORS dinámico (FRONTEND_URL o localhost:5173 por defecto)</li>
+ *   <li>JWT stateless + TenantFilter para multi-tenancy</li>
+ *   <li>Rutas públicas: /api/auth/**, /api/user/register, /api/tenant/*</li>
+ * </ul>
+ */
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-	private final JwtFilter jwtFilter;
-	private final UserDetailsServiceImpl userDetailsService;
+    private final JwtFilter              jwtFilter;
+    private final TenantFilter           tenantFilter;
+    private final UserDetailsServiceImpl userDetailsService;
 
-	@Bean
-	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-		return http
-				// Deshabilitar CSRF porque usamos tokens JWT, no cookies de sesión
-				.csrf(AbstractHttpConfigurer::disable)
-				// Habilitar CORS
-				.cors(cors -> cors.configurationSource(corsConfigurationSource()))
-				// Configurar rutas protegidas y públicas
-				.authorizeHttpRequests(auth -> auth
-						// Rutas públicas (login, registro, swagger si lo usas)
-						.requestMatchers("/auth/**", "/api/auth/**", "/api/user/register", "/api/therapists/register",
-								"/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
-						// Todas las demás rutas requieren estar autenticado
-						.anyRequest().authenticated())
-				.exceptionHandling(ex -> ex
-						.authenticationEntryPoint(unauthorizedEntryPoint()))
-				// Configurar el manejo de sesión para que sea sin estado (Stateless)
-				.sessionManagement(session -> session
-						.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-				// Agregar nuestro proveedor de autenticación
-				.authenticationProvider(authenticationProvider())
-				// Insertar el filtro JWT antes del filtro de validación de usuario y contraseña
-				// por defecto
-				.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
-				.build();
-	}
+    /** Orígenes permitidos en CORS — configurable via FRONTEND_URL en producción. */
+    @Value("${frontend.allowed-origins:http://localhost:5173}")
+    private String allowedOrigins;
 
-	@Bean
-	public AuthenticationProvider authenticationProvider() {
-		DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService);
-		authProvider.setPasswordEncoder(passwordEncoder());
-		return authProvider;
-	}
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        return http
+                .csrf(AbstractHttpConfigurer::disable)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .authorizeHttpRequests(auth -> auth
+                        // Autenticación y registro público
+                        .requestMatchers("/auth/**", "/api/auth/**", "/api/user/register").permitAll()
+                        // Onboarding público — registro de nuevas clínicas sin JWT
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/onboarding").permitAll()
+                        // Landing pública de cada tenant (sin JWT)
+                        .requestMatchers("/api/tenant/**").permitAll()
+                        // Endpoints públicos del sitio de la clínica (sin JWT)
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/services").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/services/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/posts/published").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/posts/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/specialist").permitAll()
+                        // Imágenes públicas — servidas sin JWT para embeberse en landing pages
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/media/files/**").permitAll()
+                        // Info pública de la clínica (para JSON-LD / SEO)
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/public/**").permitAll()
+                        // Health check — usado por Railway/Render para saber que el backend arrancó
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/health").permitAll()
+                        // FHIR CapabilityStatement — público por especificación FHIR R4
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/fhir/metadata").permitAll()
+                        // Webhook de PayU — debe ser público (PayU llama sin JWT)
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/billing/payu/confirmation").permitAll()
+                        // Todo lo demás requiere autenticación
+                        .anyRequest().authenticated())
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authenticationProvider(authenticationProvider())
+                // TenantFilter debe ejecutarse ANTES del JwtFilter
+                .addFilterBefore(tenantFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+                .build();
+    }
 
-	@Bean
-	public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
-		return config.getAuthenticationManager();
-	}
+    @Bean
+    public AuthenticationProvider authenticationProvider() {
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(passwordEncoder());
+        provider.setUserDetailsService(userDetailsService);
+        return provider;
+    }
 
-	@Bean
-	public PasswordEncoder passwordEncoder() {
-		return new BCryptPasswordEncoder();
-	}
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
+    }
 
-	@Bean
-	public AuthenticationEntryPoint unauthorizedEntryPoint() {
-		return (request, response, ex) -> {
-			response.setStatus(401);
-			response.setContentType("application/json");
-			response.getWriter().write("{\"status\":401,\"error\":\"Unauthorized\",\"message\":\"No autenticado\"}");
-		};
-	}
+    /** BCrypt con factor de trabajo 10. */
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
 
-	// Configuración básica de CORS para permitir peticiones desde cualquier origen
-	// en desarrollo
-	@Bean
-	public CorsConfigurationSource corsConfigurationSource() {
-		CorsConfiguration configuration = new CorsConfiguration();
-		configuration.setAllowedOriginPatterns(List.of("*")); // Cambia por tu dominio en producción (ej: "http://localhost:5173")
-		configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-		configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
-		configuration.setAllowCredentials(true);
+    /**
+     * CORS: permite peticiones del frontend.
+     * Usa allowedOriginPatterns para compatibilidad con credentials=true.
+     */
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        // Soporta múltiples orígenes separados por coma en FRONTEND_URL
+        config.setAllowedOriginPatterns(Arrays.asList(allowedOrigins.split(",")));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Tenant-Slug"));
+        config.setAllowCredentials(true);
+        config.setMaxAge(3600L);
 
-		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-		source.registerCorsConfiguration("/**", configuration);
-		return source;
-	}
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
+    }
 }

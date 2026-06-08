@@ -1,243 +1,161 @@
 package com.demo.ecosalud.service.impl;
 
+import com.demo.ecosalud.exception.ResourceNotFoundException;
+import com.demo.ecosalud.model.dto.AppointmentDTO;
+import com.demo.ecosalud.model.entities.Appointment;
+import com.demo.ecosalud.multitenancy.TenantContext;
+import com.demo.ecosalud.repository.AppointmentRepository;
+import com.demo.ecosalud.repository.ServiceRepository;
+import com.demo.ecosalud.repository.UserRepository;
+import com.demo.ecosalud.service.AppointmentService;
+import com.demo.ecosalud.service.EmailService;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
-
-import org.springframework.stereotype.Service;
-
-import com.demo.ecosalud.enums.AppointmentSatus;
-import com.demo.ecosalud.exception.BusinessRuleException;
-import com.demo.ecosalud.exception.ResourceNotFoundException;
-import com.demo.ecosalud.mapper.AppointmentMapper;
-import com.demo.ecosalud.model.dto.AppointmentDTO;
-import com.demo.ecosalud.model.entities.Appointment;
-import com.demo.ecosalud.model.entities.Catalog;
-import com.demo.ecosalud.model.entities.Therapist;
-import com.demo.ecosalud.model.entities.User;
-import com.demo.ecosalud.repository.AppointmentRepository;
-import com.demo.ecosalud.repository.CatalogRepository;
-import com.demo.ecosalud.repository.TherapistRepository;
-import com.demo.ecosalud.repository.UserRepository;
-import com.demo.ecosalud.service.AppointmentService;
-
-/**
- * Implementación del servicio de gestión de citas médicas.
- */
-@RequiredArgsConstructor
+@Slf4j
 @Service
+@RequiredArgsConstructor
 @Transactional
 public class AppointmentServiceImpl implements AppointmentService {
 
-    private final AppointmentRepository appointmentRepository;
-    private final UserRepository userRepository;
-    private final TherapistRepository therapistRepository;
-    private final CatalogRepository catalogRepository;
+    private final AppointmentRepository repo;
+    private final UserRepository        userRepo;
+    private final ServiceRepository     serviceRepo;
+    private final EmailService          emailService;
 
-    /**
-     * Agenda una nueva cita validando todas las reglas de negocio:
-     * <ul>
-     *   <li>El paciente debe existir.</li>
-     *   <li>El terapeuta debe existir y estar disponible.</li>
-     *   <li>El servicio del catálogo debe existir y estar activo.</li>
-     *   <li>El paciente no debe tener otra cita activa en la misma fecha y hora.</li>
-     *   <li>El terapeuta no debe tener otra cita activa en la misma fecha y hora.</li>
-     * </ul>
-     *
-     * @param appointmentDTO datos de la cita enviados por el frontend
-     * @return cita creada en estado PENDIENTE
-     */
+    private static final DateTimeFormatter DATE_FMT =
+            DateTimeFormatter.ofPattern("EEEE d 'de' MMMM yyyy, HH:mm", java.util.Locale.forLanguageTag("es"));
+
     @Override
-    public AppointmentDTO scheduleAppointment(AppointmentDTO appointmentDTO) {
-        User user = userRepository.findById(appointmentDTO.getUserId())
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Paciente no encontrado con id: " + appointmentDTO.getUserId()));
-
-        Therapist therapist = therapistRepository.findById(appointmentDTO.getTherapistId())
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Terapeuta no encontrado con id: " + appointmentDTO.getTherapistId()));
-
-        if (!therapist.getAvailable()) {
-            throw new BusinessRuleException("El terapeuta seleccionado no está disponible actualmente");
-        }
-
-        Catalog catalog = catalogRepository.findById(appointmentDTO.getCatalogId())
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Servicio no encontrado con id: " + appointmentDTO.getCatalogId()));
-
-        if (!catalog.getAvailability()) {
-            throw new BusinessRuleException("El servicio seleccionado no está disponible actualmente");
-        }
-
-        // Verificar que el paciente no tenga ya una cita activa en esa fecha y hora
-        boolean userHasConflict = appointmentRepository.existsByUserIdAndDateAndStatusNot(
-                user.getId(), appointmentDTO.getDate(), AppointmentSatus.CANCELADA);
-        if (userHasConflict) {
-            throw new BusinessRuleException("El paciente ya tiene una cita agendada en esa fecha y hora");
-        }
-
-        // Verificar que el terapeuta no tenga ya una cita activa en esa fecha y hora
-        boolean therapistHasConflict = appointmentRepository.existsByTherapistIdAndDateAndStatusNot(
-                therapist.getId(), appointmentDTO.getDate(), AppointmentSatus.CANCELADA);
-        if (therapistHasConflict) {
-            throw new BusinessRuleException("El terapeuta no tiene disponibilidad en la fecha y hora seleccionada");
-        }
-
-        Appointment appointment = AppointmentMapper.toEntity(appointmentDTO, user, therapist, catalog);
-        Appointment saved = appointmentRepository.save(appointment);
-        return AppointmentMapper.toDTO(saved);
+    public List<AppointmentDTO> getAll() {
+        return repo.findAll().stream().map(this::toDTO).collect(Collectors.toList());
     }
 
-    /**
-     * Obtiene una cita por su ID.
-     */
     @Override
-    public AppointmentDTO getAppointmentById(Long id) {
-        return appointmentRepository.findById(id)
-                .map(AppointmentMapper::toDTO)
-                .orElseThrow(() -> new ResourceNotFoundException("Cita no encontrada con id: " + id));
+    public List<AppointmentDTO> getByPatientId(Long patientId) {
+        return repo.findByPatientIdOrderByAppointmentDateDesc(patientId)
+                   .stream().map(this::toDTO).collect(Collectors.toList());
     }
 
-    /**
-     * Retorna todas las citas de un paciente, útil para mostrar el historial en el frontend.
-     */
     @Override
-    public List<AppointmentDTO> getAppointmentsByUser(Long userId) {
-        if (!userRepository.existsById(userId)) {
-            throw new ResourceNotFoundException("Paciente no encontrado con id: " + userId);
-        }
-        return appointmentRepository.findByUserId(userId)
-                .stream()
-                .map(AppointmentMapper::toDTO)
-                .collect(Collectors.toList());
+    public AppointmentDTO getById(Long id) {
+        return toDTO(findOrThrow(id));
     }
 
-    /**
-     * Retorna todas las citas asignadas a un terapeuta.
-     */
     @Override
-    public List<AppointmentDTO> getAppointmentsByTherapist(Long therapistId) {
-        if (!therapistRepository.existsById(therapistId)) {
-            throw new ResourceNotFoundException("Terapeuta no encontrado con id: " + therapistId);
-        }
-        return appointmentRepository.findByTherapistId(therapistId)
-                .stream()
-                .map(AppointmentMapper::toDTO)
-                .collect(Collectors.toList());
+    public AppointmentDTO create(AppointmentDTO dto) {
+        Appointment a = new Appointment();
+        copy(dto, a);
+        a.setCreatedAt(LocalDateTime.now());
+        if (a.getStatus() == null || a.getStatus().isBlank()) a.setStatus("PENDIENTE");
+        return toDTO(repo.save(a));
     }
 
-    /**
-     * Retorna todas las citas filtradas por estado.
-     */
     @Override
-    public List<AppointmentDTO> getAppointmentsByStatus(AppointmentSatus status) {
-        return appointmentRepository.findByStatus(status)
-                .stream()
-                .map(AppointmentMapper::toDTO)
-                .collect(Collectors.toList());
+    public AppointmentDTO update(Long id, AppointmentDTO dto) {
+        Appointment a = findOrThrow(id);
+        copy(dto, a);
+        a.setUpdatedAt(LocalDateTime.now());
+        return toDTO(repo.save(a));
     }
 
-    /**
-     * Retorna todas las citas del sistema (uso administrativo).
-     */
     @Override
-    public List<AppointmentDTO> getAllAppointments() {
-        return appointmentRepository.findAll()
-                .stream()
-                .map(AppointmentMapper::toDTO)
-                .collect(Collectors.toList());
+    public AppointmentDTO updateStatus(Long id, String status, String cancellationReason) {
+        Appointment a = findOrThrow(id);
+        a.setStatus(status);
+        if (cancellationReason != null) a.setCancellationReason(cancellationReason);
+        a.setUpdatedAt(LocalDateTime.now());
+        AppointmentDTO saved = toDTO(repo.save(a));
+        sendStatusEmail(a, saved, status);
+        return saved;
     }
 
-    /**
-     * Reprograma una cita a una nueva fecha y hora.
-     * No se puede reprogramar una cita cancelada.
-     * Valida que el terapeuta siga disponible en la nueva fecha.
-     * El estado cambia a REPROGRAMADA para mantener trazabilidad.
-     *
-     * @param id      ID de la cita a reprogramar
-     * @param newDate nueva fecha y hora propuesta
-     * @return cita actualizada en estado REPROGRAMADA
-     */
     @Override
-    public AppointmentDTO rescheduleAppointment(Long id, LocalDateTime newDate) {
-        Appointment appointment = appointmentRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Cita no encontrada con id: " + id));
-
-        if (appointment.getStatus() == AppointmentSatus.CANCELADA) {
-            throw new BusinessRuleException("No se puede reprogramar una cita cancelada");
-        }
-
-        if (newDate.isBefore(LocalDateTime.now())) {
-            throw new BusinessRuleException("La nueva fecha debe ser en el futuro");
-        }
-
-        // Verificar que el paciente esté libre en la nueva fecha
-        boolean userHasConflict = appointmentRepository.existsByUserIdAndDateAndStatusNot(
-                appointment.getUser().getId(), newDate, AppointmentSatus.CANCELADA);
-        if (userHasConflict) {
-            throw new BusinessRuleException("El paciente ya tiene una cita agendada en esa fecha y hora");
-        }
-
-        // Verificar que el terapeuta esté libre en la nueva fecha
-        boolean therapistHasConflict = appointmentRepository.existsByTherapistIdAndDateAndStatusNot(
-                appointment.getTherapist().getId(), newDate, AppointmentSatus.CANCELADA);
-        if (therapistHasConflict) {
-            throw new BusinessRuleException("El terapeuta no tiene disponibilidad en la nueva fecha y hora");
-        }
-
-        appointment.setDate(newDate);
-        appointment.setStatus(AppointmentSatus.REPROGRAMADA);
-        Appointment saved = appointmentRepository.save(appointment);
-        return AppointmentMapper.toDTO(saved);
+    public void delete(Long id) {
+        if (!repo.existsById(id)) throw new ResourceNotFoundException("Cita no encontrada: " + id);
+        repo.deleteById(id);
     }
 
-    /**
-     * Cancela una cita cambiando su estado a CANCELADA.
-     * No se puede cancelar una cita que ya esté cancelada.
-     */
-    @Override
-    public AppointmentDTO cancelAppointment(Long id) {
-        Appointment appointment = appointmentRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Cita no encontrada con id: " + id));
+    // ── helpers ──────────────────────────────────────────────────────────────
 
-        if (appointment.getStatus() == AppointmentSatus.CANCELADA) {
-            throw new BusinessRuleException("La cita ya se encuentra cancelada");
+    private void sendStatusEmail(Appointment a, AppointmentDTO dto, String status) {
+        try {
+            String toEmail    = dto.getPatientEmail();
+            String patientName = dto.getPatientName();
+            String serviceName = dto.getServiceName() != null ? dto.getServiceName() : "la terapia";
+            String clinicName  = TenantContext.get();
+            String dateTime    = (a.getAppointmentDate() != null && a.getAppointmentTime() != null)
+                    ? a.getAppointmentDate().atTime(a.getAppointmentTime()).format(DATE_FMT)
+                    : "fecha a confirmar";
+
+            if (toEmail == null || toEmail.isBlank()) {
+                log.warn("[EmailService] Sin email para el paciente de la cita {}", a.getId());
+                return;
+            }
+
+            if ("CONFIRMADA".equalsIgnoreCase(status)) {
+                String specialistName = a.getSpecialistId() != null
+                        ? userRepo.findById(a.getSpecialistId())
+                                  .map(u -> u.getName())
+                                  .orElse("el especialista")
+                        : "el especialista";
+                emailService.sendAppointmentConfirmation(
+                        toEmail, patientName, serviceName, dateTime, specialistName, clinicName);
+            } else if ("CANCELADA".equalsIgnoreCase(status)) {
+                emailService.sendAppointmentCancellation(
+                        toEmail, patientName, serviceName, dateTime, a.getCancellationReason());
+            }
+        } catch (Exception e) {
+            log.error("[EmailService] Error al enviar notificación para cita {}: {}", a.getId(), e.getMessage());
         }
-
-        appointment.setStatus(AppointmentSatus.CANCELADA);
-        Appointment saved = appointmentRepository.save(appointment);
-        return AppointmentMapper.toDTO(saved);
     }
 
-    /**
-     * Confirma una cita cambiando su estado a CONFIRMADA.
-     * No se puede confirmar una cita cancelada.
-     */
-    @Override
-    public AppointmentDTO confirmAppointment(Long id) {
-        Appointment appointment = appointmentRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Cita no encontrada con id: " + id));
-
-        if (appointment.getStatus() == AppointmentSatus.CANCELADA) {
-            throw new BusinessRuleException("No se puede confirmar una cita cancelada");
-        }
-
-        appointment.setStatus(AppointmentSatus.CONFIRMADA);
-        Appointment saved = appointmentRepository.save(appointment);
-        return AppointmentMapper.toDTO(saved);
+    private Appointment findOrThrow(Long id) {
+        return repo.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Cita no encontrada: " + id));
     }
 
-    /**
-     * Elimina permanentemente una cita de la base de datos (solo para admins).
-     */
-    @Override
-    public void deleteAppointment(Long id) {
-        if (!appointmentRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Cita no encontrada con id: " + id);
+    private void copy(AppointmentDTO dto, Appointment a) {
+        if (dto.getPatientId()        != null) a.setPatientId(dto.getPatientId());
+        if (dto.getSpecialistId()     != null) a.setSpecialistId(dto.getSpecialistId());
+        if (dto.getServiceId()        != null) a.setServiceId(dto.getServiceId());
+        if (dto.getAppointmentDate()  != null) a.setAppointmentDate(dto.getAppointmentDate());
+        if (dto.getAppointmentTime()  != null) a.setAppointmentTime(dto.getAppointmentTime());
+        if (dto.getStatus()           != null) a.setStatus(dto.getStatus());
+        if (dto.getNotes()            != null) a.setNotes(dto.getNotes());
+        if (dto.getCancellationReason()!= null) a.setCancellationReason(dto.getCancellationReason());
+    }
+
+    private AppointmentDTO toDTO(Appointment a) {
+        AppointmentDTO dto = new AppointmentDTO();
+        dto.setId(a.getId());
+        dto.setPatientId(a.getPatientId());
+        dto.setSpecialistId(a.getSpecialistId());
+        dto.setServiceId(a.getServiceId());
+        dto.setAppointmentDate(a.getAppointmentDate());
+        dto.setAppointmentTime(a.getAppointmentTime());
+        dto.setStatus(a.getStatus());
+        dto.setNotes(a.getNotes());
+        dto.setCancellationReason(a.getCancellationReason());
+        dto.setCreatedAt(a.getCreatedAt());
+        dto.setUpdatedAt(a.getUpdatedAt());
+
+        // Resolver nombres desde repositorios del tenant activo
+        userRepo.findById(a.getPatientId()).ifPresent(u -> {
+            dto.setPatientName(u.getName());
+            dto.setPatientEmail(u.getEmail());
+        });
+        if (a.getServiceId() != null) {
+            serviceRepo.findById(a.getServiceId())
+                    .ifPresent(s -> dto.setServiceName(s.getName()));
         }
-        appointmentRepository.deleteById(id);
+        return dto;
     }
 }
