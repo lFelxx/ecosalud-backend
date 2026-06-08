@@ -85,12 +85,14 @@ public class SecurityConfig {
 		};
 	}
 
-	// Configuración básica de CORS para permitir peticiones desde cualquier origen
-	// en desarrollo
 	@Bean
 	public CorsConfigurationSource corsConfigurationSource() {
 		CorsConfiguration configuration = new CorsConfiguration();
-		configuration.setAllowedOriginPatterns(List.of("*")); // Cambia por tu dominio en producción (ej: "http://localhost:5173")
+		configuration.setAllowedOriginPatterns(List.of(
+				"https://ecosalud-frontend-hvxn.vercel.app",
+				"http://localhost:5173",
+				"http://localhost:3000"
+		));
 		configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
 		configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
 		configuration.setAllowCredentials(true);
